@@ -1,0 +1,25 @@
+services:
+    wordpress:
+        image: wordpress:latest
+        volumes:
+            - wordpress_data:/var/www/html
+        environment:
+            WORDPRESS_DB_HOST: mariadb
+            WORDPRESS_DB_USER: manager
+            WORDPRESS_DB_PASSWORD: {{DB_PASSWORD}}
+            WORDPRESS_DB_NAME: wordpress
+            SERVICE_FQDN_WORDPRESS: {{DOMAIN}}
+        depends_on:
+            - mariadb
+    mariadb:
+        image: mariadb:10.11
+        volumes:
+            - db_data:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: {{ROOT_PASSWORD}}
+            MYSQL_DATABASE: wordpress
+            MYSQL_USER: manager
+            MYSQL_PASSWORD: {{DB_PASSWORD}}
+volumes:
+    wordpress_data:
+    db_data:

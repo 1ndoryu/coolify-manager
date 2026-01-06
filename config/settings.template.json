@@ -1,0 +1,25 @@
+{
+    "vps": {
+        "ip": "${COOLIFY_VPS_IP}",
+        "user": "${COOLIFY_VPS_USER}",
+        "sshKey": null
+    },
+    "coolify": {
+        "baseUrl": "http://${COOLIFY_VPS_IP}:8000",
+        "apiToken": "${COOLIFY_API_TOKEN}",
+        "serverUuid": "${COOLIFY_SERVER_UUID}",
+        "projectUuid": "${COOLIFY_PROJECT_UUID}",
+        "environmentName": "production"
+    },
+    "wordpress": {
+        "dbUser": "manager",
+        "dbPassword": "${COOLIFY_DB_PASSWORD}",
+        "defaultAdminEmail": "admin@example.com"
+    },
+    "glory": {
+        "templateRepo": "https://github.com/1ndoryu/glorytemplate.git",
+        "libraryRepo": "https://github.com/1ndoryu/glory.git",
+        "defaultBranch": "main"
+    },
+    "sitios": []
+}

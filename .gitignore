@@ -1,0 +1,52 @@
+# ==========================================
+# Coolify Manager - .gitignore
+# ==========================================
+
+# Configuracion con datos sensibles
+config/settings.json
+config/settings.local.json
+
+# Archivos de logs
+logs/*.log
+logs/**/*.log
+!logs/.gitkeep
+
+# Resultados de tests (contienen datos del servidor)
+tests/results_*.json
+tests/*.json
+!tests/Mocks/*.json
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# PowerShell
+*.ps1xml
+*.psd1.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backups
+*.bak
+*.backup
+*.old
+
+# Archivos temporales
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Archivos SQL de backup
+*.sql
+
+# Variables de entorno locales
+.env
+.env.local
+.env.*.local
