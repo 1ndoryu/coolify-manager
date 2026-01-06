@@ -200,14 +200,19 @@ coolify-manager/
 │   ├── settings.json        # Config local (no en git)
 │   └── settings.template.json
 ├── modules/
-│   ├── Core/
+│   ├── Core/                # Módulos fundamentales
 │   │   ├── Logger.psm1      # Sistema de logs
 │   │   ├── ConfigManager.psm1
 │   │   └── Validators.psm1
+│   ├── WordPress/           # Módulos SOLID (v2.0)
+│   │   ├── ThemeManager.psm1    # Gestión del tema Glory
+│   │   ├── DatabaseManager.psm1 # Operaciones de BD
+│   │   └── SiteManager.psm1     # Configuración de sitio
 │   ├── CoolifyApi.psm1      # API REST Coolify
 │   ├── SshOperations.psm1   # SSH/Docker
-│   └── WordPressManager.psm1
+│   └── WordPressManager.psm1 # Facade (compatibilidad)
 ├── commands/
+│   ├── registry.psm1        # Registro dinámico de comandos
 │   ├── new-site.ps1
 │   ├── list-sites.ps1
 │   ├── restart-site.ps1
@@ -215,9 +220,14 @@ coolify-manager/
 ├── templates/
 │   └── wordpress-stack.yaml
 ├── tests/
+│   ├── Unit/                # Tests unitarios Pester
+│   ├── Integration/         # Tests de integración
 │   ├── Test-Manual.ps1
-│   └── Unit/
+│   └── Test-Ssh.ps1
 └── docs/
+    ├── PLAN-MAESTRO.md
+    ├── ARQUITECTURA.md
+    └── CHANGELOG.md
 ```
 
 ---
@@ -243,11 +253,16 @@ Restart-CoolifyService -Uuid "abc123..."
 
 ### Funciones Disponibles
 
-| Módulo                | Funciones                                            |
-| --------------------- | ---------------------------------------------------- |
-| CoolifyApi.psm1       | Get-CoolifyServices, New-CoolifyWordPressStack, etc. |
-| SshOperations.psm1    | Invoke-SshCommand, Get-DockerContainers, etc.        |
-| WordPressManager.psm1 | Install-GloryTheme, Import-WordPressDatabase, etc.   |
+| Módulo                         | Funciones                                             |
+| ------------------------------ | ----------------------------------------------------- |
+| CoolifyApi.psm1                | Get-CoolifyServices, New-CoolifyWordPressStack, etc.  |
+| SshOperations.psm1             | Invoke-SshCommand, Get-DockerContainers, etc.         |
+| WordPress/ThemeManager.psm1    | Install-GloryTheme, Update-GloryTheme                 |
+| WordPress/DatabaseManager.psm1 | Import-WordPressDatabase, Export-WordPressDatabase    |
+| WordPress/SiteManager.psm1     | Get-SiteConfig, Set-WordPressUrls, New-WordPressAdmin |
+| Core/Validators.psm1           | Test-SiteExists, Test-DomainFormat, Assert-SiteReady  |
+| Core/Logger.psm1               | Write-Log, Get-LogEntries, Clear-OldLogs              |
+| Core/ConfigManager.psm1        | Get-Config, Get-DbPassword, Get-AllSites              |
 
 ---
 

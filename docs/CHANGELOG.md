@@ -8,7 +8,48 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 
 ## [Unreleased] - En desarrollo
 
-### Agregado
+### Agregado (Fase 3 - Refactorización SOLID)
+- **Módulo `WordPress/ThemeManager.psm1`** - Gestión del tema Glory
+  - `Get-GloryConfig` - Obtiene configuración de repositorios Glory
+  - `Install-GloryTheme` - Instalación completa del tema con dependencias
+  - `Update-GloryTheme` - Actualización via git pull + rebuild
+
+- **Módulo `WordPress/DatabaseManager.psm1`** - Operaciones de base de datos
+  - `Import-WordPressDatabase` - Importa archivos SQL a MariaDB
+  - `Export-WordPressDatabase` - Exporta BD a archivo local (NUEVO)
+
+- **Módulo `WordPress/SiteManager.psm1`** - Configuración de sitios WP
+  - `Get-SiteConfig` - Obtiene config de sitio con mensaje de error mejorado
+  - `Set-WordPressUrls` - Actualiza opciones home y siteurl
+  - `New-WordPressAdmin` - Crea usuarios administradores
+  - `Get-WordPressOption` - Obtiene cualquier opción de WP (NUEVO)
+
+- **Tests de integración**
+  - `tests/Integration/ThemeManager.Tests.ps1`
+  - `tests/Integration/DatabaseManager.Tests.ps1`
+  - `tests/Integration/SiteManager.Tests.ps1`
+
+### Modificado
+- **`WordPressManager.psm1`** refactorizado como módulo facade
+  - Ahora re-exporta funciones de los módulos especializados
+  - Mantiene compatibilidad hacia atrás con código existente
+  - Reducido de 331 líneas a ~45 líneas
+
+### Agregado (Fase 4 - Extensibilidad)
+- **Módulo `commands/registry.psm1`** - Registro dinámico de comandos
+  - `Get-AvailableCommands` - Lista comandos disponibles
+  - `Get-CommandAlias` - Obtiene alias de comando
+  - `Invoke-Command` - Ejecuta comando por alias
+  - `Show-CommandsTable` - Muestra tabla de comandos
+
+- **Documentación `docs/ARQUITECTURA.md`** - Guía técnica completa
+  - Estructura de carpetas
+  - Descripción de módulos
+  - Flujo de datos
+  - Principios SOLID aplicados
+  - Guía de extensión
+
+### Agregado (Fases 1-2)
 - **Módulo `Validators.psm1`** - Sistema de validación centralizado
   - `Test-SiteExists` - Verifica si un sitio existe en la configuración
   - `Test-DomainFormat` - Valida formato de dominios (requiere protocolo)
