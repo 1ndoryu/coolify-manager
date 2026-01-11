@@ -8,6 +8,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 
 ## [Unreleased] - En desarrollo
 
+### Corregido (2026-01-11) - Compatibilidad Windows → Linux
+
+- **BUG-01**: Splatting de argumentos en `manager.ps1`
+  - Problema: `@RemainingArgs` no funcionaba correctamente con arrays
+  - Solución: Creada función `Invoke-CommandScript` con `Invoke-Expression`
+
+- **BUG-02**: Caracteres `\r` de Windows corrompen comandos en Linux
+  - Problema: Here-strings de PowerShell preservan `\r\n`, causando errores como `cd: $'/path\r': No such file or directory`
+  - Solución: Agregada limpieza `$cleanCommand = $Command -replace "\`r", ""` en `Invoke-DockerExec`
+
+- **BUG-03**: Parámetro incorrecto en `ThemeManager.psm1`
+  - Problema: Se usaba `-Source` en llamadas a `Invoke-DockerExec` (debía ser `-Command`)
+  - Solución: Corregidas las 3 llamadas a `Invoke-DockerExec`
+
+- **Mejoras en scripts de deploy**:
+  - Scripts ahora usan rutas absolutas para evitar errores de navegación
+  - Configuración automática de `git safe.directory` para evitar "dubious ownership"
+  - Composer se ejecuta desde el directorio correcto del tema
+
 ### Agregado (Fase 3 - Refactorización SOLID)
 - **Módulo `WordPress/ThemeManager.psm1`** - Gestión del tema Glory
   - `Get-GloryConfig` - Obtiene configuración de repositorios Glory

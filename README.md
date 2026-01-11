@@ -266,6 +266,30 @@ Restart-CoolifyService -Uuid "abc123..."
 
 ---
 
+## Notas Técnicas
+
+### Compatibilidad Windows → Linux
+
+Esta herramienta se ejecuta desde Windows pero envía comandos a contenedores Linux. Para evitar problemas:
+
+1. **Caracteres `\r` (CR)**: Los here-strings de PowerShell incluyen `\r\n`. El módulo `SshOperations.psm1` limpia automáticamente los `\r` antes de enviar comandos a Linux.
+
+2. **Rutas absolutas**: Los scripts de deploy usan rutas absolutas completas (ej: `/var/www/html/wp-content/themes/glory`) en lugar de rutas relativas para evitar errores de `cd`.
+
+3. **Git safe.directory**: Los scripts configuran automáticamente `git config --global --add safe.directory` para evitar errores de "dubious ownership" cuando el contenedor ejecuta como root.
+
+### Warnings Esperados
+
+Al ejecutar `deploy -Update`, pueden aparecer estos mensajes que **NO son errores**:
+
+| Mensaje                                  | Explicación                        |
+| ---------------------------------------- | ---------------------------------- |
+| `packages are looking for funding`       | Normal de npm/composer             |
+| `Some chunks are larger than 500 kB`     | Sugerencia de optimización de Vite |
+| `does not comply with psr-4 autoloading` | Warning de naming en código PHP    |
+
+---
+
 ## Tests
 
 ```powershell

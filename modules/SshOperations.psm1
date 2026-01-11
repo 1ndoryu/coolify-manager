@@ -68,10 +68,10 @@ function Get-DockerContainers {
             $parts = $line -split "`t"
             if ($parts.Count -ge 4) {
                 $containers += [PSCustomObject]@{
-                    Id = $parts[0]
-                    Name = $parts[1]
+                    Id     = $parts[0]
+                    Name   = $parts[1]
                     Status = $parts[2]
-                    Image = $parts[3]
+                    Image  = $parts[3]
                 }
             }
         }
@@ -133,7 +133,10 @@ function Invoke-DockerExec {
         [string]$User = "root"
     )
     
-    $dockerCmd = "docker exec -u $User $ContainerId bash -c '$Command'"
+    # Limpiar caracteres \r de Windows que causan errores en Linux
+    $cleanCommand = $Command -replace "`r", ""
+    
+    $dockerCmd = "docker exec -u $User $ContainerId bash -c '$cleanCommand'"
     return Invoke-SshCommand -Command $dockerCmd
 }
 

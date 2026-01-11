@@ -128,6 +128,24 @@ function Show-QuickStatus {
     Write-Host ""
 }
 
+# Función para invocar un script con argumentos correctamente
+function Invoke-CommandScript {
+    param(
+        [string]$ScriptPath,
+        [string[]]$Arguments
+    )
+    
+    if ($Arguments -and $Arguments.Count -gt 0) {
+        # Construir argumentos como string para pasarlos correctamente
+        $argString = $Arguments -join ' '
+        $fullCommand = "& '$ScriptPath' $argString"
+        Invoke-Expression $fullCommand
+    }
+    else {
+        & $ScriptPath
+    }
+}
+
 switch ($Action) {
     "help" {
         Show-Help
@@ -136,25 +154,25 @@ switch ($Action) {
         Show-QuickStatus
     }
     "new" {
-        & "$CommandsPath\new-site.ps1" @RemainingArgs
+        Invoke-CommandScript -ScriptPath "$CommandsPath\new-site.ps1" -Arguments $RemainingArgs
     }
     "list" {
-        & "$CommandsPath\list-sites.ps1" @RemainingArgs
+        Invoke-CommandScript -ScriptPath "$CommandsPath\list-sites.ps1" -Arguments $RemainingArgs
     }
     "restart" {
-        & "$CommandsPath\restart-site.ps1" @RemainingArgs
+        Invoke-CommandScript -ScriptPath "$CommandsPath\restart-site.ps1" -Arguments $RemainingArgs
     }
     "deploy" {
-        & "$CommandsPath\deploy-theme.ps1" @RemainingArgs
+        Invoke-CommandScript -ScriptPath "$CommandsPath\deploy-theme.ps1" -Arguments $RemainingArgs
     }
     "import" {
-        & "$CommandsPath\import-database.ps1" @RemainingArgs
+        Invoke-CommandScript -ScriptPath "$CommandsPath\import-database.ps1" -Arguments $RemainingArgs
     }
     "exec" {
-        & "$CommandsPath\exec-command.ps1" @RemainingArgs
+        Invoke-CommandScript -ScriptPath "$CommandsPath\exec-command.ps1" -Arguments $RemainingArgs
     }
     "logs" {
-        & "$CommandsPath\view-logs.ps1" @RemainingArgs
+        Invoke-CommandScript -ScriptPath "$CommandsPath\view-logs.ps1" -Arguments $RemainingArgs
     }
     default {
         Show-Help

@@ -52,14 +52,14 @@ function Install-GloryTheme {
         [switch]$SkipReact
     )
     
-    Write-Log -Level INFO -Message "Instalando tema Glory en $StackName" -Command "Install-GloryTheme"
+    Write-Log -Level INFO -Message "Instalando tema Glory en $StackName" -Source "Install-GloryTheme"
     
     $gloryConfig = Get-GloryConfig
     $containerId = Get-WordPressContainerId -StackName $StackName
     
     if (-not $containerId) {
         $errorMsg = "No se encontro contenedor WordPress para el stack: $StackName"
-        Write-Log -Level ERROR -Message $errorMsg -Command "Install-GloryTheme"
+        Write-Log -Level ERROR -Message $errorMsg -Source "Install-GloryTheme"
         throw $errorMsg
     }
     
@@ -78,16 +78,21 @@ apt-get install -y nodejs
 # Instalar Composer
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+# Configurar git safe.directory
+git config --global --add safe.directory /var/www/html/wp-content/themes/glory
+git config --global --add safe.directory /var/www/html/wp-content/themes/glory/Glory
+
 # Clonar tema Glory
 cd /var/www/html/wp-content/themes
 rm -rf glory
 git clone -b $GloryBranch $($gloryConfig.templateRepo) glory
 
 # Clonar libreria interna
-cd glory
+cd /var/www/html/wp-content/themes/glory
 git clone -b $LibraryBranch $($gloryConfig.libraryRepo) Glory
 
 # Instalar dependencias PHP
+cd /var/www/html/wp-content/themes/glory
 composer install --no-dev --optimize-autoloader
 
 # Corregir permisos
@@ -108,7 +113,7 @@ chown -R www-data:www-data /var/www/html/wp-content/themes/glory
         Invoke-DockerExec -ContainerId $containerId -Command $reactScript
     }
     
-    Write-Log -Level INFO -Message "Tema Glory instalado exitosamente en $StackName" -Command "Install-GloryTheme"
+    Write-Log -Level INFO -Message "Tema Glory instalado exitosamente en $StackName" -Source "Install-GloryTheme"
     Write-Host "Tema Glory instalado exitosamente!" -ForegroundColor Green
 }
 
@@ -129,33 +134,47 @@ function Update-GloryTheme {
         [string]$StackName
     )
     
-    Write-Log -Level INFO -Message "Actualizando tema Glory en $StackName" -Command "Update-GloryTheme"
+    Write-Log -Level INFO -Message "Actualizando tema Glory en $StackName" -Source "Update-GloryTheme"
     
     $containerId = Get-WordPressContainerId -StackName $StackName
     
     if (-not $containerId) {
         $errorMsg = "No se encontro contenedor WordPress para el stack: $StackName"
-        Write-Log -Level ERROR -Message $errorMsg -Command "Update-GloryTheme"
+        Write-Log -Level ERROR -Message $errorMsg -Source "Update-GloryTheme"
         throw $errorMsg
     }
     
     Write-Host "Actualizando tema Glory..." -ForegroundColor Yellow
     
     $updateScript = @"
+# Configurar git safe.directory para evitar errores de ownership
+git config --global --add safe.directory /var/www/html/wp-content/themes/glory
+git config --global --add safe.directory /var/www/html/wp-content/themes/glory/Glory
+
+# Actualizar tema principal
 cd /var/www/html/wp-content/themes/glory
 git pull
-cd Glory
+
+# Actualizar libreria Glory
+cd /var/www/html/wp-content/themes/glory/Glory
 git pull
-composer install --no-dev
-cd assets/react
+
+# Instalar dependencias PHP (desde directorio del tema, no de la libreria)
+cd /var/www/html/wp-content/themes/glory
+composer install --no-dev --optimize-autoloader
+
+# Compilar React
+cd /var/www/html/wp-content/themes/glory/Glory/assets/react
 npm install
 npm run build
+
+# Corregir permisos
 chown -R www-data:www-data /var/www/html/wp-content/themes/glory
 "@
     
     Invoke-DockerExec -ContainerId $containerId -Command $updateScript
     
-    Write-Log -Level INFO -Message "Tema Glory actualizado en $StackName" -Command "Update-GloryTheme"
+    Write-Log -Level INFO -Message "Tema Glory actualizado en $StackName" -Source "Update-GloryTheme"
     Write-Host "Tema actualizado!" -ForegroundColor Green
 }
 
