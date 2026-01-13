@@ -146,36 +146,85 @@ function Update-GloryTheme {
     
     Write-Host "Actualizando tema Glory..." -ForegroundColor Yellow
     
+    /* 
+    * Script que verifica e instala dependencias si no existen.
+    * Esto corrige el bug donde el update fallaba silenciosamente
+    * porque git/npm/composer no estaban instalados en el contenedor.
+    */
     $updateScript = @"
+#!/bin/bash
+set -e  # Salir si hay errores
+
+# Verificar e instalar git si no existe
+if ! command -v git &> /dev/null; then
+    echo "[INFO] Instalando git..."
+    apt-get update && apt-get install -y git
+fi
+
+# Verificar e instalar node si no existe
+if ! command -v node &> /dev/null; then
+    echo "[INFO] Instalando Node.js..."
+    apt-get update
+    apt-get install -y curl
+    curl -sL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+fi
+
+# Verificar e instalar composer si no existe
+if ! command -v composer &> /dev/null; then
+    echo "[INFO] Instalando Composer..."
+    apt-get install -y unzip
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+fi
+
 # Configurar git safe.directory para evitar errores de ownership
 git config --global --add safe.directory /var/www/html/wp-content/themes/glory
 git config --global --add safe.directory /var/www/html/wp-content/themes/glory/Glory
 
 # Actualizar tema principal
+echo "[INFO] Actualizando tema principal..."
 cd /var/www/html/wp-content/themes/glory
 git pull
 
 # Actualizar libreria Glory
+echo "[INFO] Actualizando libreria Glory..."
 cd /var/www/html/wp-content/themes/glory/Glory
 git pull
 
 # Instalar dependencias PHP (desde directorio del tema, no de la libreria)
+echo "[INFO] Instalando dependencias PHP..."
 cd /var/www/html/wp-content/themes/glory
 composer install --no-dev --optimize-autoloader
 
 # Compilar React
+echo "[INFO] Compilando React..."
 cd /var/www/html/wp-content/themes/glory/Glory/assets/react
 npm install
 npm run build
 
 # Corregir permisos
+echo "[INFO] Corrigiendo permisos..."
 chown -R www-data:www-data /var/www/html/wp-content/themes/glory
+
+echo "[SUCCESS] Actualizacion completada!"
 "@
     
-    Invoke-DockerExec -ContainerId $containerId -Command $updateScript
+    $result = Invoke-DockerExec -ContainerId $containerId -Command $updateScript
     
-    Write-Log -Level INFO -Message "Tema Glory actualizado en $StackName" -Source "Update-GloryTheme"
-    Write-Host "Tema actualizado!" -ForegroundColor Green
+    # Mostrar output del script
+    if ($result) {
+        Write-Host $result -ForegroundColor Gray
+    }
+    
+    # Verificar si hubo error (buscar [SUCCESS] en el output)
+    if ($result -notmatch "\[SUCCESS\]") {
+        Write-Log -Level WARN -Message "La actualizacion puede haber fallado. Revisa el output anterior." -Source "Update-GloryTheme"
+        Write-Host "Advertencia: La actualizacion puede haber fallado. Revisa el output." -ForegroundColor Yellow
+    }
+    else {
+        Write-Log -Level INFO -Message "Tema Glory actualizado en $StackName" -Source "Update-GloryTheme"
+        Write-Host "Tema actualizado exitosamente!" -ForegroundColor Green
+    }
 }
 
 Export-ModuleMember -Function @(
