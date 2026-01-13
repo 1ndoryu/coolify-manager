@@ -146,11 +146,11 @@ function Update-GloryTheme {
     
     Write-Host "Actualizando tema Glory..." -ForegroundColor Yellow
     
-    /* 
-    * Script que verifica e instala dependencias si no existen.
-    * Esto corrige el bug donde el update fallaba silenciosamente
-    * porque git/npm/composer no estaban instalados en el contenedor.
-    */
+    <# 
+     Script que verifica e instala dependencias si no existen.
+     Esto corrige el bug donde el update fallaba silenciosamente
+     porque git/npm/composer no estaban instalados en el contenedor.
+    #>
     $updateScript = @"
 #!/bin/bash
 set -e  # Salir si hay errores
