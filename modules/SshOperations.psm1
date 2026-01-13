@@ -86,13 +86,26 @@ function Get-WordPressContainerId {
         Obtiene el ID del contenedor WordPress de un stack especifico
     .PARAMETER StackName
         Nombre del stack (ej: "padel-stack")
+    .PARAMETER Uuid
+        UUID del stack (opcional, preferido)
     #>
     param(
-        [Parameter(Mandatory)]
-        [string]$StackName
+        [string]$StackName,
+        [string]$Uuid
     )
     
-    $cmd = "docker ps -q -f name=$StackName -f name=wordpress | head -n 1"
+    if ($Uuid) {
+        # Busqueda exacta por UUID (patron Coolify v4: wordpress-UUID)
+        $cmd = "docker ps -q -f name=wordpress-$Uuid | head -n 1"
+    }
+    elseif ($StackName) {
+        # Fallback a nombre de stack (menos confiable si los containers no tienen el nombre del stack)
+        $cmd = "docker ps -q -f name=$StackName -f name=wordpress | head -n 1"
+    }
+    else {
+        throw "Debe especificar StackName o Uuid"
+    }
+
     $containerId = Invoke-SshCommand -Command $cmd -Silent
     return $containerId.Trim()
 }
@@ -136,8 +149,42 @@ function Invoke-DockerExec {
     # Limpiar caracteres \r de Windows que causan errores en Linux
     $cleanCommand = $Command -replace "`r", ""
     
-    $dockerCmd = "docker exec -u $User $ContainerId bash -c '$cleanCommand'"
-    return Invoke-SshCommand -Command $dockerCmd
+    # Si el comando es multilinea, usar base64 para evitar problemas de escape
+    if ($cleanCommand -match "`n") {
+        $vps = Get-VpsConfig
+        $sshTarget = "$($vps.user)@$($vps.ip)"
+        $tempScriptName = "script_$(Get-Random).sh"
+        $tempScriptPath = "/tmp/$tempScriptName"
+        
+        # Codificar el script en base64
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($cleanCommand)
+        $base64Script = [Convert]::ToBase64String($bytes)
+        
+        # Crear el script temporal decodificando base64 en el contenedor
+        Write-Host "Creando script temporal en contenedor..." -ForegroundColor DarkGray
+        $createCmd = "docker exec -u $User $ContainerId bash -c 'echo $base64Script | base64 -d > $tempScriptPath'"
+        ssh $sshTarget $createCmd 2>&1 | Out-Null
+        
+        # Dar permisos de ejecucion
+        $chmodCmd = "docker exec -u $User $ContainerId chmod +x $tempScriptPath"
+        ssh $sshTarget $chmodCmd 2>&1 | Out-Null
+        
+        # Ejecutar el script
+        Write-Host "Ejecutando script en contenedor..." -ForegroundColor DarkGray
+        $execCmd = "docker exec -u $User $ContainerId bash $tempScriptPath"
+        $result = ssh $sshTarget $execCmd 2>&1
+        
+        # Limpiar script temporal
+        $cleanupCmd = "docker exec -u $User $ContainerId rm -f $tempScriptPath"
+        ssh $sshTarget $cleanupCmd 2>&1 | Out-Null
+        
+        return $result
+    }
+    else {
+        # Comando simple, ejecutar directamente
+        $dockerCmd = "docker exec -u $User $ContainerId bash -c '$cleanCommand'"
+        return Invoke-SshCommand -Command $dockerCmd
+    }
 }
 
 function Copy-FileToContainer {
