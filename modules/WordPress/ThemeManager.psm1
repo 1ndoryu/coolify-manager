@@ -151,18 +151,18 @@ function Update-GloryTheme {
      Esto corrige el bug donde el update fallaba silenciosamente
      porque git/npm/composer no estaban instalados en el contenedor.
     #>
-    $updateScript = @"
+    $updateScript = @'
 #!/bin/bash
-set -e  # Salir si hay errores
+set -e
 
 # Verificar e instalar git si no existe
-if ! command -v git &> /dev/null; then
+if [ ! -x "$(command -v git)" ]; then
     echo "[INFO] Instalando git..."
     apt-get update && apt-get install -y git
 fi
 
 # Verificar e instalar node si no existe
-if ! command -v node &> /dev/null; then
+if [ ! -x "$(command -v node)" ]; then
     echo "[INFO] Instalando Node.js..."
     apt-get update
     apt-get install -y curl
@@ -171,13 +171,13 @@ if ! command -v node &> /dev/null; then
 fi
 
 # Verificar e instalar composer si no existe
-if ! command -v composer &> /dev/null; then
+if [ ! -x "$(command -v composer)" ]; then
     echo "[INFO] Instalando Composer..."
     apt-get install -y unzip
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 fi
 
-# Configurar git safe.directory para evitar errores de ownership
+# Configurar git safe.directory
 git config --global --add safe.directory /var/www/html/wp-content/themes/glory
 git config --global --add safe.directory /var/www/html/wp-content/themes/glory/Glory
 
@@ -191,7 +191,7 @@ echo "[INFO] Actualizando libreria Glory..."
 cd /var/www/html/wp-content/themes/glory/Glory
 git pull
 
-# Instalar dependencias PHP (desde directorio del tema, no de la libreria)
+# Instalar dependencias PHP
 echo "[INFO] Instalando dependencias PHP..."
 cd /var/www/html/wp-content/themes/glory
 composer install --no-dev --optimize-autoloader
@@ -207,7 +207,7 @@ echo "[INFO] Corrigiendo permisos..."
 chown -R www-data:www-data /var/www/html/wp-content/themes/glory
 
 echo "[SUCCESS] Actualizacion completada!"
-"@
+'@
     
     $result = Invoke-DockerExec -ContainerId $containerId -Command $updateScript
     
