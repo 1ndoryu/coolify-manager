@@ -43,7 +43,6 @@ function Restart-SingleSite {
     
     <#
     Validacion: Verificar que el sitio existe
-    Nota: No requerimos UUID aqui porque podemos reiniciar desde la config
     #>
     try {
         $sitio = Test-SiteExists -SiteName $Name
@@ -55,27 +54,57 @@ function Restart-SingleSite {
     
     $stackName = "$Name-stack"
     
-    Write-Host "Reiniciando: $Name" -ForegroundColor Yellow
-    Write-Log -Level "INFO" -Message "Reiniciando sitio: $Name" -Source "restart-site"
+    Write-Host "Procesando: $Name" -ForegroundColor Yellow
+    Write-Log -Level "INFO" -Message "Iniciando reinicio de sitio: $Name" -Source "restart-site"
+    
+    # Intento 1: Usar API de Coolify (Redeploy completo) - Preferido
+    if ($sitio.stackUuid -and -not $OnlyDb -and -not $OnlyWordPress) {
+        Write-Host "  Metodo: API Coolify (Redeploy/Restart)" -ForegroundColor White
+        try {
+            Write-Host "  Enviando solicitud de reinicio a Coolify..." -ForegroundColor Cyan
+            $result = Restart-CoolifyService -Uuid $sitio.stackUuid
+            Write-Host "  Solicitud enviada exitosamente." -ForegroundColor Green
+            Write-Log -Level "INFO" -Message "Reiniciado via API Coolify: $Name ($($sitio.stackUuid))" -Source "restart-site"
+            
+            Write-Host "  NOTA: El proceso puede tardar unos segundos en completarse en el servidor." -ForegroundColor Gray
+            return
+        }
+        catch {
+            Write-Host "  Error al reiniciar via API: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "  Intentando metodo alternativo (Docker restart directo)..." -ForegroundColor Yellow
+            Write-Log -Level "WARN" -Message "Fallo reinicio via API, intentando Docker directo: $($_.Exception.Message)" -Source "restart-site"
+        }
+    }
+    
+    # Intento 2: Reinicio directo de contenedores Docker (Fallback o especifico)
+    Write-Host "  Metodo: Docker Restart (SSH)" -ForegroundColor White
     
     if (-not $OnlyDb) {
-        $wpId = Get-WordPressContainerId -StackName $stackName
+        # Intentamos obtener ID por StackName y UUID para mayor precision
+        $wpId = Get-WordPressContainerId -StackName $stackName -Uuid $sitio.stackUuid
         if ($wpId) {
-            Write-Host "  - WordPress..." -ForegroundColor Cyan
+            Write-Host "  - WordPress ($wpId)..." -ForegroundColor Cyan
             Restart-DockerContainer -ContainerId $wpId | Out-Null
+        }
+        else {
+            Write-Host "  - WordPress: Contenedor no encontrado" -ForegroundColor DarkGray
         }
     }
     
     if (-not $OnlyWordPress) {
+        # Para base de datos, solemos depender del nombre del stack pues no tenemos UUID especifico de servicio DB guardado (es parte del stack)
         $dbId = Get-MariaDbContainerId -StackName $stackName
         if ($dbId) {
-            Write-Host "  - MariaDB..." -ForegroundColor Cyan
+            Write-Host "  - MariaDB ($dbId)..." -ForegroundColor Cyan
             Restart-DockerContainer -ContainerId $dbId | Out-Null
+        }
+        else {
+            Write-Host "  - MariaDB: Contenedor no encontrado" -ForegroundColor DarkGray
         }
     }
     
     Write-Host "  OK!" -ForegroundColor Green
-    Write-Log -Level "INFO" -Message "Sitio reiniciado: $Name" -Source "restart-site"
+    Write-Log -Level "INFO" -Message "Sitio reiniciado (Docker): $Name" -Source "restart-site"
 }
 
 Write-Host ""

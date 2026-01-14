@@ -25,7 +25,7 @@
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status")]
+    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy")]
     [string]$Action = "help",
     
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -73,6 +73,10 @@ function Show-Help {
     Write-Host "    logs     " -ForegroundColor Green -NoNewline
     Write-Host "Ver logs de un sitio"
     Write-Host "             Ejemplo: .\manager.ps1 logs -SiteName nakomi -Lines 100"
+    Write-Host ""
+    Write-Host "    set-domain" -ForegroundColor Green -NoNewline
+    Write-Host "Cambiar dominio de un sitio"
+    Write-Host "             Ejemplo: .\manager.ps1 set-domain -SiteName padel -Domain https://nuevo.com"
     Write-Host ""
     Write-Host "    status   " -ForegroundColor Green -NoNewline
     Write-Host "Estado rapido del VPS y Coolify"
@@ -173,6 +177,12 @@ switch ($Action) {
     }
     "logs" {
         Invoke-CommandScript -ScriptPath "$CommandsPath\view-logs.ps1" -Arguments $RemainingArgs
+    }
+    "set-domain" {
+        Invoke-CommandScript -ScriptPath "$CommandsPath\set-domain.ps1" -Arguments $RemainingArgs
+    }
+    "redeploy" {
+        Invoke-CommandScript -ScriptPath "$CommandsPath\redeploy-service.ps1" -Arguments $RemainingArgs
     }
     default {
         Show-Help

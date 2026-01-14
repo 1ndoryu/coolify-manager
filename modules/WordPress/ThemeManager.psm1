@@ -216,14 +216,14 @@ echo "[SUCCESS] Actualizacion completada!"
         Write-Host $result -ForegroundColor Gray
     }
     
-    # Verificar si hubo error (buscar [SUCCESS] en el output)
-    if ($result -notmatch "\[SUCCESS\]") {
-        Write-Log -Level WARN -Message "La actualizacion puede haber fallado. Revisa el output anterior." -Source "Update-GloryTheme"
-        Write-Host "Advertencia: La actualizacion puede haber fallado. Revisa el output." -ForegroundColor Yellow
-    }
-    else {
+    # Verificar si hubo exito (buscar [SUCCESS] en el output)
+    if ($result -like "*[SUCCESS]*") {
         Write-Log -Level INFO -Message "Tema Glory actualizado en $StackName" -Source "Update-GloryTheme"
         Write-Host "Tema actualizado exitosamente!" -ForegroundColor Green
+    }
+    else {
+        Write-Log -Level WARN -Message "La actualizacion puede haber fallado. Revisa el output anterior." -Source "Update-GloryTheme"
+        Write-Host "Advertencia: La actualizacion puede haber fallado. Revisa el output." -ForegroundColor Yellow
     }
 }
 

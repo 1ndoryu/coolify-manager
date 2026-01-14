@@ -28,8 +28,8 @@ function Get-CoolifyHeaders {
     $config = Get-CoolifyConfig
     return @{
         "Authorization" = "Bearer $($config.coolify.apiToken)"
-        "Content-Type" = "application/json"
-        "Accept" = "application/json"
+        "Content-Type"  = "application/json"
+        "Accept"        = "application/json"
     }
 }
 
@@ -59,9 +59,9 @@ function Invoke-CoolifyApi {
     $headers = Get-CoolifyHeaders
     
     $params = @{
-        Uri = $url
-        Method = $Method
-        Headers = $headers
+        Uri         = $url
+        Method      = $Method
+        Headers     = $headers
         ContentType = "application/json"
     }
     
@@ -153,11 +153,11 @@ function New-CoolifyWordPressStack {
     $base64Yaml = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($yaml))
     
     $body = @{
-        project_uuid = $config.coolify.projectUuid
-        environment_name = $config.coolify.environmentName
-        server_uuid = $config.coolify.serverUuid
+        project_uuid       = $config.coolify.projectUuid
+        environment_name   = $config.coolify.environmentName
+        server_uuid        = $config.coolify.serverUuid
         docker_compose_raw = $base64Yaml
-        name = "$SiteName-stack"
+        name               = "$SiteName-stack"
     }
     
     $result = Invoke-CoolifyApi -Endpoint "/services" -Method POST -Body $body
@@ -168,8 +168,8 @@ function New-CoolifyWordPressStack {
     Write-Host "Root Password: $RootPassword" -ForegroundColor Yellow
     
     return @{
-        uuid = $result.uuid
-        dbPassword = $DbPassword
+        uuid         = $result.uuid
+        dbPassword   = $DbPassword
         rootPassword = $RootPassword
     }
 }
@@ -210,6 +210,21 @@ function Restart-CoolifyService {
     return Invoke-CoolifyApi -Endpoint "/services/$Uuid/restart" -Method POST
 }
 
+function Deploy-CoolifyService {
+    <#
+    .SYNOPSIS
+        Despliega (rebuild/redeploy) un servicio en Coolify
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [string]$Uuid
+    )
+    # Los endpoints /deploy fallaron con 404/400.
+    # El endpoint /restart funciono correctamente y en Coolify v4 suele disparar
+    # la regeneracion de configuracion.
+    return Invoke-CoolifyApi -Endpoint "/services/$Uuid/restart" -Method POST
+}
+
 Export-ModuleMember -Function @(
     'Get-CoolifyConfig',
     'Invoke-CoolifyApi',
@@ -220,5 +235,6 @@ Export-ModuleMember -Function @(
     'New-CoolifyWordPressStack',
     'Start-CoolifyService',
     'Stop-CoolifyService',
-    'Restart-CoolifyService'
+    'Restart-CoolifyService',
+    'Deploy-CoolifyService'
 )

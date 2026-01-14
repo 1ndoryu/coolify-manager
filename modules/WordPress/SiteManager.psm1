@@ -50,6 +50,8 @@ function Set-WordPressUrls {
         para reflejar el nuevo dominio.
     .PARAMETER StackName
         Nombre del stack
+    .PARAMETER StackUuid
+        UUID del stack (opcional, recomendado)
     .PARAMETER Domain
         Dominio nuevo con protocolo (ej: https://mi-sitio.com)
     .EXAMPLE
@@ -59,17 +61,19 @@ function Set-WordPressUrls {
         [Parameter(Mandatory)]
         [string]$StackName,
         
+        [string]$StackUuid,
+        
         [Parameter(Mandatory)]
         [string]$Domain
     )
     
-    Write-Log -Level INFO -Message "Actualizando URLs de $StackName a $Domain" -Command "Set-WordPressUrls"
+    Write-Log -Level INFO -Message "Actualizando URLs de $StackName a $Domain" -Source "Set-WordPressUrls"
     
-    $containerId = Get-WordPressContainerId -StackName $StackName
+    $containerId = Get-WordPressContainerId -StackName $StackName -Uuid $StackUuid
     
     if (-not $containerId) {
         $errorMsg = "No se encontro contenedor WordPress para el stack: $StackName"
-        Write-Log -Level ERROR -Message $errorMsg -Command "Set-WordPressUrls"
+        Write-Log -Level ERROR -Message $errorMsg -Source "Set-WordPressUrls"
         throw $errorMsg
     }
     
@@ -91,7 +95,7 @@ echo 'URLs actualizadas a: $Domain';
     
     Remove-Item $tempFile -Force
     
-    Write-Log -Level INFO -Message "URLs actualizadas para $StackName" -Command "Set-WordPressUrls"
+    Write-Log -Level INFO -Message "URLs actualizadas para $StackName" -Source "Set-WordPressUrls"
     Write-Host $result -ForegroundColor Green
 }
 
@@ -126,13 +130,13 @@ function New-WordPressAdmin {
         [string]$Email = "admin@wandori.us"
     )
     
-    Write-Log -Level INFO -Message "Creando admin '$Username' en $StackName" -Command "New-WordPressAdmin"
+    Write-Log -Level INFO -Message "Creando admin '$Username' en $StackName" -Source "New-WordPressAdmin"
     
     $containerId = Get-WordPressContainerId -StackName $StackName
     
     if (-not $containerId) {
         $errorMsg = "No se encontro contenedor WordPress para el stack: $StackName"
-        Write-Log -Level ERROR -Message $errorMsg -Command "New-WordPressAdmin"
+        Write-Log -Level ERROR -Message $errorMsg -Source "New-WordPressAdmin"
         throw $errorMsg
     }
     
@@ -159,7 +163,7 @@ if (!username_exists('$Username')) {
     
     Remove-Item $tempFile -Force
     
-    Write-Log -Level INFO -Message "Admin creado/verificado en $StackName" -Command "New-WordPressAdmin"
+    Write-Log -Level INFO -Message "Admin creado/verificado en $StackName" -Source "New-WordPressAdmin"
     Write-Host $result -ForegroundColor Green
 }
 
