@@ -63,25 +63,30 @@ catch {
 
 if (-not $GloryBranch) { $GloryBranch = $sitio.gloryBranch }
 if (-not $LibraryBranch) { $LibraryBranch = $sitio.libraryBranch }
+$themeName = $sitio.themeName
+if (-not $themeName) { $themeName = "glory" }
 
-$stackName = "$SiteName-stack"
+$stackUuid = $sitio.stackUuid
 
 Write-Host "Sitio: $SiteName" -ForegroundColor White
 Write-Host "Rama tema: $GloryBranch" -ForegroundColor White
 Write-Host "Rama libreria: $LibraryBranch" -ForegroundColor White
+Write-Host "Carpeta tema: $themeName" -ForegroundColor White
+Write-Host "Stack UUID: $stackUuid" -ForegroundColor DarkGray
 Write-Host ""
 
 if ($Update) {
     Write-Host "Modo: ACTUALIZACION (git pull)" -ForegroundColor Yellow
-    Update-GloryTheme -StackName $stackName
+    Update-GloryTheme -StackUuid $stackUuid -ThemeName $themeName
 }
 else {
     Write-Host "Modo: INSTALACION COMPLETA" -ForegroundColor Yellow
     
     $params = @{
-        StackName     = $stackName
+        StackUuid     = $stackUuid
         GloryBranch   = $GloryBranch
         LibraryBranch = $LibraryBranch
+        ThemeName     = $themeName
     }
     
     if ($SkipReact) {

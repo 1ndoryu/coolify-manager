@@ -25,7 +25,7 @@
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy")]
+    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug")]
     [string]$Action = "help",
     
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -73,7 +73,12 @@ function Show-Help {
     Write-Host "    logs     " -ForegroundColor Green -NoNewline
     Write-Host "Ver logs de un sitio"
     Write-Host "             Ejemplo: .\manager.ps1 logs -SiteName nakomi -Lines 100"
+    Write-Host "             Ejemplo: .\manager.ps1 logs -SiteName nakomi -WpDebug -Filter 'error'"
     Write-Host ""
+    Write-Host "    debug    " -ForegroundColor Green -NoNewline
+    Write-Host "Gestionar modo debug de WordPress"
+    Write-Host "             Ejemplo: .\manager.ps1 debug -SiteName padel -Enable"
+    Write-Host "             Ejemplo: .\manager.ps1 debug -SiteName padel -Disable"
     Write-Host "    set-domain" -ForegroundColor Green -NoNewline
     Write-Host "Cambiar dominio de un sitio"
     Write-Host "             Ejemplo: .\manager.ps1 set-domain -SiteName padel -Domain https://nuevo.com"
@@ -183,6 +188,9 @@ switch ($Action) {
     }
     "redeploy" {
         Invoke-CommandScript -ScriptPath "$CommandsPath\redeploy-service.ps1" -Arguments $RemainingArgs
+    }
+    "debug" {
+        Invoke-CommandScript -ScriptPath "$CommandsPath\debug-site.ps1" -Arguments $RemainingArgs
     }
     default {
         Show-Help

@@ -69,9 +69,27 @@ Edita `config/settings.json` con tus datos:
         "apiToken": "TU_TOKEN_API",
         "serverUuid": "TU_SERVER_UUID",
         "projectUuid": "TU_PROJECT_UUID"
-    }
+    },
+    "glory": {
+        "templateRepo": "https://github.com/tu-usuario/tu-template.git",
+        "libraryRepo": "https://github.com/tu-usuario/glory.git"
+    },
+    "sitios": [
+        {
+            "nombre": "mi-sitio",
+            "dominio": "https://mi-sitio.com",
+            "stackUuid": "UUID_DEL_STACK_EN_COOLIFY",
+            "gloryBranch": "main",
+            "libraryBranch": "main",
+            "themeName": "glory"
+        }
+    ]
 }
 ```
+
+**Campos importantes de sitios:**
+- `stackUuid`: UUID del stack en Coolify (visible en la URL del stack)
+- `themeName`: Nombre exacto de la carpeta del tema en `/wp-content/themes/` (sensible a mayúsculas)
 
 ### 3. Verificar instalación
 
@@ -150,16 +168,33 @@ Edita `config/settings.json` con tus datos:
 ### `logs` - Ver logs
 
 ```powershell
-.\manager.ps1 logs -SiteName "blog"
-.\manager.ps1 logs -SiteName "blog" -Lines 200
-.\manager.ps1 logs -SiteName "blog" -Target mariadb
-.\manager.ps1 logs -SiteName "blog" -Follow    # Tiempo real
+.\\manager.ps1 logs -SiteName "blog"
+.\\manager.ps1 logs -SiteName "blog" -Lines 200
+.\\manager.ps1 logs -SiteName "blog" -Target mariadb
+.\\manager.ps1 logs -SiteName "blog" -Follow    # Tiempo real
+
+# Ver debug.log de WordPress (requiere debug habilitado)
+.\\manager.ps1 logs -SiteName "blog" -WpDebug
+.\\manager.ps1 logs -SiteName "blog" -WpDebug -Filter "AmazonAJAX"
+```
+
+### `debug` - Gestionar modo debug de WordPress
+
+```powershell
+# Ver estado actual
+.\\manager.ps1 debug -SiteName "blog"
+
+# Habilitar modo debug (WP_DEBUG + WP_DEBUG_LOG)
+.\\manager.ps1 debug -SiteName "blog" -Enable
+
+# Deshabilitar modo debug
+.\\manager.ps1 debug -SiteName "blog" -Disable
 ```
 
 ### `status` - Estado del sistema
 
 ```powershell
-.\manager.ps1 status
+.\\manager.ps1 status
 ```
 
 ---

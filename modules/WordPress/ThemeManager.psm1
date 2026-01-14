@@ -30,35 +30,39 @@ function Install-GloryTheme {
     .DESCRIPTION
         Clona el repositorio del tema Glory, instala dependencias PHP y opcionalmente
         compila los assets React.
-    .PARAMETER StackName
-        Nombre del stack (ej: "padel-stack")
+    .PARAMETER StackUuid
+        UUID del stack de Coolify
     .PARAMETER GloryBranch
         Rama del tema Glory a instalar (default: main)
     .PARAMETER LibraryBranch
         Rama de la libreria Glory a instalar (default: main)
+    .PARAMETER ThemeName
+        Nombre de la carpeta del tema en el servidor (default: glory)
     .PARAMETER SkipReact
         Si se especifica, omite la compilacion de React
     .EXAMPLE
-        Install-GloryTheme -StackName "padel-stack" -GloryBranch "main"
+        Install-GloryTheme -StackUuid "zkcc040cc0scock4kcooowkc" -GloryBranch "main" -ThemeName "Padel"
     #>
     param(
         [Parameter(Mandatory)]
-        [string]$StackName,
+        [string]$StackUuid,
         
         [string]$GloryBranch = "main",
         
         [string]$LibraryBranch = "main",
         
+        [string]$ThemeName = "glory",
+        
         [switch]$SkipReact
     )
     
-    Write-Log -Level INFO -Message "Instalando tema Glory en $StackName" -Source "Install-GloryTheme"
+    Write-Log -Level INFO -Message "Instalando tema Glory (UUID: $StackUuid, ThemeName: $ThemeName)" -Source "Install-GloryTheme"
     
     $gloryConfig = Get-GloryConfig
-    $containerId = Get-WordPressContainerId -StackName $StackName
+    $containerId = Get-WordPressContainerId -Uuid $StackUuid
     
     if (-not $containerId) {
-        $errorMsg = "No se encontro contenedor WordPress para el stack: $StackName"
+        $errorMsg = "No se encontro contenedor WordPress para UUID: $StackUuid"
         Write-Log -Level ERROR -Message $errorMsg -Source "Install-GloryTheme"
         throw $errorMsg
     }
@@ -66,8 +70,21 @@ function Install-GloryTheme {
     Write-Host "Instalando tema Glory en contenedor: $containerId" -ForegroundColor Green
     Write-Host "  - Rama tema: $GloryBranch" -ForegroundColor Cyan
     Write-Host "  - Rama libreria: $LibraryBranch" -ForegroundColor Cyan
+    Write-Host "  - Carpeta tema: $ThemeName" -ForegroundColor Cyan
+    
+    $templateRepo = $gloryConfig.templateRepo
+    $libraryRepo = $gloryConfig.libraryRepo
     
     $installScript = @"
+#!/bin/bash
+set -e
+
+THEME_NAME="$ThemeName"
+THEME_PATH="/var/www/html/wp-content/themes/`$THEME_NAME"
+LIBRARY_PATH="`$THEME_PATH/Glory"
+
+echo "[INFO] Instalando tema: `$THEME_NAME"
+
 # Instalar dependencias del sistema
 apt-get update && apt-get install -y unzip curl git
 
@@ -79,24 +96,26 @@ apt-get install -y nodejs
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Configurar git safe.directory
-git config --global --add safe.directory /var/www/html/wp-content/themes/glory
-git config --global --add safe.directory /var/www/html/wp-content/themes/glory/Glory
+git config --global --add safe.directory `$THEME_PATH
+git config --global --add safe.directory `$LIBRARY_PATH
 
 # Clonar tema Glory
 cd /var/www/html/wp-content/themes
-rm -rf glory
-git clone -b $GloryBranch $($gloryConfig.templateRepo) glory
+rm -rf `$THEME_NAME
+git clone -b $GloryBranch $templateRepo `$THEME_NAME
 
 # Clonar libreria interna
-cd /var/www/html/wp-content/themes/glory
-git clone -b $LibraryBranch $($gloryConfig.libraryRepo) Glory
+cd `$THEME_PATH
+git clone -b $LibraryBranch $libraryRepo Glory
 
 # Instalar dependencias PHP
-cd /var/www/html/wp-content/themes/glory
+cd `$THEME_PATH
 composer install --no-dev --optimize-autoloader
 
 # Corregir permisos
-chown -R www-data:www-data /var/www/html/wp-content/themes/glory
+chown -R www-data:www-data `$THEME_PATH
+
+echo "[SUCCESS] Instalacion base completada!"
 "@
 
     Write-Host "Ejecutando instalacion de dependencias..." -ForegroundColor Yellow
@@ -105,10 +124,14 @@ chown -R www-data:www-data /var/www/html/wp-content/themes/glory
     if (-not $SkipReact) {
         Write-Host "Compilando React..." -ForegroundColor Yellow
         $reactScript = @"
-cd /var/www/html/wp-content/themes/glory/Glory/assets/react
+#!/bin/bash
+set -e
+THEME_PATH="/var/www/html/wp-content/themes/$ThemeName"
+cd `$THEME_PATH/Glory/assets/react
 npm install
 npm run build
-chown -R www-data:www-data /var/www/html/wp-content/themes/glory
+chown -R www-data:www-data `$THEME_PATH
+echo "[SUCCESS] React compilado!"
 "@
         Invoke-DockerExec -ContainerId $containerId -Command $reactScript
     }
@@ -125,44 +148,107 @@ function Update-GloryTheme {
         Ejecuta git pull en el tema y la libreria, reinstala dependencias
         y recompila los assets React.
     .PARAMETER StackName
-        Nombre del stack
+        Nombre del stack (fallback si no hay UUID)
+    .PARAMETER StackUuid
+        UUID del stack de Coolify (preferido)
+    .PARAMETER ThemeName
+        Nombre de la carpeta del tema en el servidor (default: glory)
     .EXAMPLE
-        Update-GloryTheme -StackName "padel-stack"
+        Update-GloryTheme -StackUuid "zkcc040cc0scock4kcooowkc" -ThemeName "Padel"
     #>
     param(
-        [Parameter(Mandatory)]
-        [string]$StackName
+        [string]$StackName,
+        
+        [string]$StackUuid,
+        
+        [string]$ThemeName = "glory"
     )
     
-    Write-Log -Level INFO -Message "Actualizando tema Glory en $StackName" -Source "Update-GloryTheme"
+    Write-Log -Level INFO -Message "Actualizando tema Glory (ThemeName: $ThemeName, UUID: $StackUuid)" -Source "Update-GloryTheme"
     
-    $containerId = Get-WordPressContainerId -StackName $StackName
+    # Buscar contenedor usando UUID (preferido) o StackName (fallback)
+    if ($StackUuid) {
+        $containerId = Get-WordPressContainerId -Uuid $StackUuid
+    }
+    elseif ($StackName) {
+        $containerId = Get-WordPressContainerId -StackName $StackName
+    }
+    else {
+        throw "Debe especificar StackName o StackUuid"
+    }
     
     if (-not $containerId) {
-        $errorMsg = "No se encontro contenedor WordPress para el stack: $StackName"
+        $errorMsg = "No se encontro contenedor WordPress (UUID: $StackUuid, Stack: $StackName)"
         Write-Log -Level ERROR -Message $errorMsg -Source "Update-GloryTheme"
         throw $errorMsg
     }
     
-    Write-Host "Actualizando tema Glory..." -ForegroundColor Yellow
+    Write-Host "Contenedor encontrado: $containerId" -ForegroundColor Gray
+    Write-Host "Actualizando tema Glory (carpeta: $ThemeName)..." -ForegroundColor Yellow
     
     <# 
      Script que verifica e instala dependencias si no existen.
      Esto corrige el bug donde el update fallaba silenciosamente
      porque git/npm/composer no estaban instalados en el contenedor.
+     
+     CORRECCION: Usa ThemeName dinamico en lugar de 'glory' hardcodeado.
+     VALIDACION: Verifica que la carpeta existe antes de continuar.
     #>
-    $updateScript = @'
+    $updateScript = @"
 #!/bin/bash
 set -e
 
+THEME_NAME="$ThemeName"
+THEME_PATH="/var/www/html/wp-content/themes/`$THEME_NAME"
+LIBRARY_PATH="`$THEME_PATH/Glory"
+THEMES_DIR="/var/www/html/wp-content/themes"
+
+echo "[INFO] Tema: `$THEME_NAME"
+echo "[INFO] Ruta tema: `$THEME_PATH"
+echo "[INFO] Ruta libreria: `$LIBRARY_PATH"
+
+# ===========================================
+# VALIDACION: Verificar que la carpeta existe
+# ===========================================
+if [ ! -d "`$THEME_PATH" ]; then
+    echo ""
+    echo "[ERROR] =========================================="
+    echo "[ERROR] LA CARPETA DEL TEMA NO EXISTE!"
+    echo "[ERROR] Buscando: `$THEME_PATH"
+    echo "[ERROR] =========================================="
+    echo ""
+    echo "[INFO] Carpetas disponibles en `$THEMES_DIR:"
+    ls -la `$THEMES_DIR | grep "^d" | awk '{print "  - " `$NF}'
+    echo ""
+    echo "[SOLUCION] Verifica el campo 'themeName' en settings.json"
+    echo "[SOLUCION] El valor actual es: `$THEME_NAME"
+    exit 1
+fi
+
+if [ ! -d "`$LIBRARY_PATH" ]; then
+    echo ""
+    echo "[ERROR] =========================================="
+    echo "[ERROR] LA CARPETA DE LA LIBRERIA GLORY NO EXISTE!"
+    echo "[ERROR] Buscando: `$LIBRARY_PATH"
+    echo "[ERROR] =========================================="
+    echo ""
+    echo "[INFO] Contenido de `$THEME_PATH:"
+    ls -la `$THEME_PATH
+    echo ""
+    echo "[SOLUCION] Ejecuta 'Install-GloryTheme' para clonar la libreria"
+    exit 1
+fi
+
+echo "[OK] Carpetas validadas correctamente"
+
 # Verificar e instalar git si no existe
-if [ ! -x "$(command -v git)" ]; then
+if [ ! -x "`$(command -v git)" ]; then
     echo "[INFO] Instalando git..."
     apt-get update && apt-get install -y git
 fi
 
 # Verificar e instalar node si no existe
-if [ ! -x "$(command -v node)" ]; then
+if [ ! -x "`$(command -v node)" ]; then
     echo "[INFO] Instalando Node.js..."
     apt-get update
     apt-get install -y curl
@@ -171,43 +257,44 @@ if [ ! -x "$(command -v node)" ]; then
 fi
 
 # Verificar e instalar composer si no existe
-if [ ! -x "$(command -v composer)" ]; then
+if [ ! -x "`$(command -v composer)" ]; then
     echo "[INFO] Instalando Composer..."
     apt-get install -y unzip
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 fi
 
 # Configurar git safe.directory
-git config --global --add safe.directory /var/www/html/wp-content/themes/glory
-git config --global --add safe.directory /var/www/html/wp-content/themes/glory/Glory
+git config --global --add safe.directory `$THEME_PATH
+git config --global --add safe.directory `$LIBRARY_PATH
 
 # Actualizar tema principal
 echo "[INFO] Actualizando tema principal..."
-cd /var/www/html/wp-content/themes/glory
+cd `$THEME_PATH
 git pull
 
 # Actualizar libreria Glory
 echo "[INFO] Actualizando libreria Glory..."
-cd /var/www/html/wp-content/themes/glory/Glory
+cd `$LIBRARY_PATH
 git pull
+
 
 # Instalar dependencias PHP
 echo "[INFO] Instalando dependencias PHP..."
-cd /var/www/html/wp-content/themes/glory
+cd `$THEME_PATH
 composer install --no-dev --optimize-autoloader
 
 # Compilar React
 echo "[INFO] Compilando React..."
-cd /var/www/html/wp-content/themes/glory/Glory/assets/react
+cd `$LIBRARY_PATH/assets/react
 npm install
 npm run build
 
 # Corregir permisos
 echo "[INFO] Corrigiendo permisos..."
-chown -R www-data:www-data /var/www/html/wp-content/themes/glory
+chown -R www-data:www-data `$THEME_PATH
 
 echo "[SUCCESS] Actualizacion completada!"
-'@
+"@
     
     $result = Invoke-DockerExec -ContainerId $containerId -Command $updateScript
     

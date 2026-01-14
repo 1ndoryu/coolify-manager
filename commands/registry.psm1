@@ -65,6 +65,7 @@ function Get-CommandAlias {
         "import-database" = "import"
         "exec-command"    = "exec"
         "view-logs"       = "logs"
+        "debug-site"      = "debug"
     }
     
     if ($aliasMap.ContainsKey($CommandName)) {
@@ -102,7 +103,7 @@ function Get-DefaultMetadata {
     elseif ($Alias -in @("deploy", "import")) {
         $category = "despliegue"
     }
-    elseif ($Alias -in @("exec", "logs")) {
+    elseif ($Alias -in @("exec", "logs", "debug")) {
         $category = "debug"
     }
     
