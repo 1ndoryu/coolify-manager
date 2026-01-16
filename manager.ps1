@@ -25,7 +25,7 @@
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug")]
+    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug", "cache")]
     [string]$Action = "help",
     
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -79,6 +79,13 @@ function Show-Help {
     Write-Host "Gestionar modo debug de WordPress"
     Write-Host "             Ejemplo: .\manager.ps1 debug -SiteName padel -Enable"
     Write-Host "             Ejemplo: .\manager.ps1 debug -SiteName padel -Disable"
+    Write-Host ""
+    Write-Host "    cache    " -ForegroundColor Green -NoNewline
+    Write-Host "Gestionar cache headers HTTP"
+    Write-Host "             Ejemplo: .\manager.ps1 cache -SiteName padel -Status"
+    Write-Host "             Ejemplo: .\manager.ps1 cache -SiteName padel -Enable"
+    Write-Host "             Ejemplo: .\manager.ps1 cache -All -Enable"
+    Write-Host ""
     Write-Host "    set-domain" -ForegroundColor Green -NoNewline
     Write-Host "Cambiar dominio de un sitio"
     Write-Host "             Ejemplo: .\manager.ps1 set-domain -SiteName padel -Domain https://nuevo.com"
@@ -191,6 +198,9 @@ switch ($Action) {
     }
     "debug" {
         Invoke-CommandScript -ScriptPath "$CommandsPath\debug-site.ps1" -Arguments $RemainingArgs
+    }
+    "cache" {
+        Invoke-CommandScript -ScriptPath "$CommandsPath\cache-site.ps1" -Arguments $RemainingArgs
     }
     default {
         Show-Help

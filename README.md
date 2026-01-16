@@ -191,6 +191,32 @@ Edita `config/settings.json` con tus datos:
 .\\manager.ps1 debug -SiteName "blog" -Disable
 ```
 
+### `cache` - Gestionar cache headers HTTP
+
+Mejora el rendimiento configurando headers de caché para archivos estáticos (CSS, JS, imágenes, fuentes).
+
+```powershell
+# Ver estado actual
+.\\manager.ps1 cache -SiteName "blog"
+
+# Habilitar cache headers
+.\\manager.ps1 cache -SiteName "blog" -Enable
+
+# Deshabilitar cache headers  
+.\\manager.ps1 cache -SiteName "blog" -Disable
+
+# Aplicar a todos los sitios
+.\\manager.ps1 cache -All -Status
+.\\manager.ps1 cache -All -Enable
+```
+
+**Qué hace:**
+- Agrega reglas al `.htaccess` para cachear archivos estáticos
+- Imágenes y fuentes: 1 año (inmutables)
+- CSS y JS: 1 mes (WordPress usa `?ver=` para cache busting)
+- HTML: sin caché (contenido dinámico)
+- Habilita automáticamente los módulos `mod_expires` y `mod_headers` de Apache
+
 ### `status` - Estado del sistema
 
 ```powershell
@@ -288,16 +314,17 @@ Restart-CoolifyService -Uuid "abc123..."
 
 ### Funciones Disponibles
 
-| Módulo                         | Funciones                                             |
-| ------------------------------ | ----------------------------------------------------- |
-| CoolifyApi.psm1                | Get-CoolifyServices, New-CoolifyWordPressStack, etc.  |
-| SshOperations.psm1             | Invoke-SshCommand, Get-DockerContainers, etc.         |
-| WordPress/ThemeManager.psm1    | Install-GloryTheme, Update-GloryTheme                 |
-| WordPress/DatabaseManager.psm1 | Import-WordPressDatabase, Export-WordPressDatabase    |
-| WordPress/SiteManager.psm1     | Get-SiteConfig, Set-WordPressUrls, New-WordPressAdmin |
-| Core/Validators.psm1           | Test-SiteExists, Test-DomainFormat, Assert-SiteReady  |
-| Core/Logger.psm1               | Write-Log, Get-LogEntries, Clear-OldLogs              |
-| Core/ConfigManager.psm1        | Get-Config, Get-DbPassword, Get-AllSites              |
+| Módulo                         | Funciones                                                  |
+| ------------------------------ | ---------------------------------------------------------- |
+| CoolifyApi.psm1                | Get-CoolifyServices, New-CoolifyWordPressStack, etc.       |
+| SshOperations.psm1             | Invoke-SshCommand, Get-DockerContainers, etc.              |
+| WordPress/ThemeManager.psm1    | Install-GloryTheme, Update-GloryTheme                      |
+| WordPress/DatabaseManager.psm1 | Import-WordPressDatabase, Export-WordPressDatabase         |
+| WordPress/SiteManager.psm1     | Get-SiteConfig, Set-WordPressUrls, New-WordPressAdmin      |
+| WordPress/CacheManager.psm1    | Get-CacheStatus, Enable-CacheHeaders, Disable-CacheHeaders |
+| Core/Validators.psm1           | Test-SiteExists, Test-DomainFormat, Assert-SiteReady       |
+| Core/Logger.psm1               | Write-Log, Get-LogEntries, Clear-OldLogs                   |
+| Core/ConfigManager.psm1        | Get-Config, Get-DbPassword, Get-AllSites                   |
 
 ---
 

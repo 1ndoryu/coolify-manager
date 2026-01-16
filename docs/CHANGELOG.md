@@ -8,6 +8,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 
 ## [Unreleased] - En desarrollo
 
+### Agregado (2026-01-16) - Sistema de Cache Headers
+
+- **Comando `cache`** para gestionar cache headers HTTP en sitios WordPress
+  - `cache -Status` - Verifica estado de cache headers
+  - `cache -Enable` - Habilita cache headers en `.htaccess`
+  - `cache -Disable` - Deshabilita cache headers
+  - `cache -All` - Aplica operación a todos los sitios
+
+- **Módulo `WordPress/CacheManager.psm1`**
+  - `Get-CacheStatus` - Obtiene estado actual de cache
+  - `Enable-CacheHeaders` - Inyecta reglas de cache via PHP
+  - `Disable-CacheHeaders` - Remueve reglas de cache
+  - `Test-ApacheModules` - Verifica/habilita mod_expires y mod_headers
+
+- **Integración con `new-site.ps1`**
+  - Cache headers se habilitan automáticamente al crear nuevos sitios
+  - Nuevo parámetro `-SkipCache` para omitir la configuración de cache
+  - El proceso de creación ahora tiene 5 pasos en lugar de 4
+
+
 ### Corregido (2026-01-11) - Compatibilidad Windows → Linux
 
 - **BUG-01**: Splatting de argumentos en `manager.ps1`
