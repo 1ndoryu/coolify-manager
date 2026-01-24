@@ -188,7 +188,9 @@ function Invoke-DockerExec {
     }
     else {
         # Comando simple, ejecutar directamente
-        $dockerCmd = "docker exec -u $User $ContainerId bash -c '$cleanCommand'"
+        # Escapar comillas simples para bash para evitar romper el string -c '...'
+        $escapedCommand = $cleanCommand -replace "'", "'\''"
+        $dockerCmd = "docker exec -u $User $ContainerId bash -c '$escapedCommand'"
         return Invoke-SshCommand -Command $dockerCmd
     }
 }

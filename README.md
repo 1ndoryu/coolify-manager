@@ -97,6 +97,14 @@ Edita `config/settings.json` con tus datos:
 .\manager.ps1 status
 ```
 
+### `git-status` - Diagnóstico Git
+
+Obtiene información detallada del repositorio git en el servidor (rama actual, cambios sin commitear, último commit). Útil para depurar problemas de sincronización.
+
+```powershell
+.\manager.ps1 git-status -SiteName "blog"
+```
+
 ---
 
 ## Uso Rápido
@@ -145,6 +153,7 @@ Edita `config/settings.json` con tus datos:
 
 ```powershell
 .\manager.ps1 deploy -SiteName "blog" -GloryBranch "main"
+.\manager.ps1 deploy -SiteName "blog" -GloryBranch "feature-x" -LibraryBranch "dev" # Rama especifica de librería
 .\manager.ps1 deploy -SiteName "blog" -Update    # Solo actualizar
 ```
 
@@ -338,7 +347,9 @@ Esta herramienta se ejecuta desde Windows pero envía comandos a contenedores Li
 
 2. **Rutas absolutas**: Los scripts de deploy usan rutas absolutas completas (ej: `/var/www/html/wp-content/themes/glory`) en lugar de rutas relativas para evitar errores de `cd`.
 
-3. **Git safe.directory**: Los scripts configuran automáticamente `git config --global --add safe.directory` para evitar errores de "dubious ownership" cuando el contenedor ejecuta como root.
+3. **Git safe.directory**: Los scripts configuran automáticamente `git config --global --add safe.directory` para evitar errores de "dubious ownership".
+
+4. **Self-Healing Git**: Si el repositorio del tema o librería se corrompe (o falta la carpeta `.git`), la herramienta lo detecta y lo re-clona automáticamente sin fallar.
 
 ### Warnings Esperados
 

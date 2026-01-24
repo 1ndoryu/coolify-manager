@@ -8,6 +8,16 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 
 ## [Unreleased] - En desarrollo
 
+### Corregido (2026-01-24) - Actualizador de Temas
+
+- **BUG-04**: La rama de la librería (`LibraryBranch`) no se aplicaba correctamente
+  - Problema: Las variables de Bash no se interpolaban bien desde PowerShell, causando que el `git checkout` fallara silenciosamente o no se ejecutara.
+  - Solución: Corregida la interpolación de variables (`$Var` -> `$Var`) en el script embebido.
+
+- **Self-Healing Git**:
+  - Problema: Si la carpeta de la librería no era un repo git válido (ej: copiado por FTP), el `git pull` fallaba.
+  - Solución: Agregada lógica automática para detectar repos rotos, borrarlos y re-clonarlos desde cero sin intervención del usuario.
+
 ### Agregado (2026-01-16) - Sistema de Cache Headers
 
 - **Comando `cache`** para gestionar cache headers HTTP en sitios WordPress

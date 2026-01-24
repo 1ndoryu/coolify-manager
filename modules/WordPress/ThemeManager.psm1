@@ -166,7 +166,13 @@ function Update-GloryTheme {
         
         [string]$StackUuid,
         
-        [string]$ThemeName = "glory"
+        [string]$ThemeName = "glory",
+        
+        [string]$GloryBranch = "main",
+
+        [string]$LibraryBranch = "main",
+
+        [switch]$Force
     )
     
     Write-Log -Level INFO -Message "Actualizando tema Glory (ThemeName: $ThemeName, UUID: $StackUuid)" -Source "Update-GloryTheme"
@@ -188,6 +194,9 @@ function Update-GloryTheme {
         throw $errorMsg
     }
     
+    $gloryConfig = Get-GloryConfig
+    $libraryRepo = $gloryConfig.libraryRepo
+
     Write-Host "Contenedor encontrado: $containerId" -ForegroundColor Gray
     Write-Host "Actualizando tema Glory (carpeta: $ThemeName)..." -ForegroundColor Yellow
     
@@ -212,6 +221,11 @@ THEME_NAME="$ThemeName"
 THEME_PATH="/var/www/html/wp-content/themes/`$THEME_NAME"
 LIBRARY_PATH="`$THEME_PATH/Glory"
 THEMES_DIR="/var/www/html/wp-content/themes"
+
+
+GLORY_BRANCH="$GloryBranch"
+LIBRARY_BRANCH="$LibraryBranch"
+LIBRARY_REPO="$libraryRepo"
 
 echo "[INFO] Tema: `$THEME_NAME"
 echo "[INFO] Ruta tema: `$THEME_PATH"
@@ -273,19 +287,40 @@ if [ ! -x "`$(command -v composer)" ]; then
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 fi
 
-# Configurar git safe.directory
+# Configurar git safe.directory y comportamiento de pull
 git config --global --add safe.directory `$THEME_PATH
 git config --global --add safe.directory `$LIBRARY_PATH
+git config --global pull.rebase false
+git config --global user.email "manager@coolify.bot"
+git config --global user.name "Coolify Manager"
 
 # Actualizar tema principal
 echo "[INFO] Actualizando tema principal..."
 cd `$THEME_PATH
-git pull
+
+if [ "$Force" = "True" ]; then
+    echo "[WARN] Realizando HARD RESET a origin/`$GLORY_BRANCH..."
+    git fetch --all
+    git reset --hard "origin/`$GLORY_BRANCH"
+else
+    git pull
+fi
 
 # Actualizar libreria Glory
-echo "[INFO] Actualizando libreria Glory..."
-cd `$LIBRARY_PATH
-git pull
+echo "[INFO] Actualizando libreria Glory (`$LIBRARY_BRANCH)..."
+
+if [ ! -d "`$LIBRARY_PATH/.git" ]; then
+    echo "[WARN] La libreria no es un repositorio git valido o no tiene .git."
+    echo "[INFO] Re-clonando libreria desde `$LIBRARY_REPO..."
+    cd "`$THEME_PATH"
+    rm -rf Glory
+    git clone -b `$LIBRARY_BRANCH `$LIBRARY_REPO Glory
+else
+    cd `$LIBRARY_PATH
+    git fetch --all
+    git checkout `$LIBRARY_BRANCH
+    git pull origin `$LIBRARY_BRANCH
+fi
 
 
 # Instalar dependencias PHP

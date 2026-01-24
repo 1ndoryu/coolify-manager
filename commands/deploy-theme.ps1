@@ -14,6 +14,8 @@
     Actualiza en lugar de reinstalar (mas rapido)
 .PARAMETER SkipReact
     Omite la compilacion de React
+.PARAMETER Force
+    Fuerza el despliegue con git reset --hard (destructivo)
 .EXAMPLE
     .\deploy-theme.ps1 -SiteName "padel" -GloryBranch "padel"
 .EXAMPLE
@@ -30,7 +32,9 @@ param(
     
     [switch]$Update,
     
-    [switch]$SkipReact
+    [switch]$SkipReact,
+
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -77,7 +81,8 @@ Write-Host ""
 
 if ($Update) {
     Write-Host "Modo: ACTUALIZACION (git pull)" -ForegroundColor Yellow
-    Update-GloryTheme -StackUuid $stackUuid -ThemeName $themeName
+    if ($Force) { Write-Host "MODO FORCE: RESET --HARD ACTIVADO" -ForegroundColor Red }
+    Update-GloryTheme -StackUuid $stackUuid -ThemeName $themeName -GloryBranch $GloryBranch -LibraryBranch $LibraryBranch -Force:$Force
 }
 else {
     Write-Host "Modo: INSTALACION COMPLETA" -ForegroundColor Yellow

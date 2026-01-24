@@ -25,7 +25,7 @@
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug", "cache")]
+    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug", "cache", "git-status")]
     [string]$Action = "help",
     
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -93,6 +93,10 @@ function Show-Help {
     Write-Host "    status   " -ForegroundColor Green -NoNewline
     Write-Host "Estado rapido del VPS y Coolify"
     Write-Host ""
+    Write-Host "    git-status" -ForegroundColor Green -NoNewline
+    Write-Host "Diagnostico Git del tema remoto"
+    Write-Host "             Ejemplo: .\manager.ps1 git-status -SiteName guillermo"
+    Write-Host ""
     Write-Host "    help     " -ForegroundColor Green -NoNewline
     Write-Host "Mostrar esta ayuda"
     Write-Host ""
@@ -152,7 +156,8 @@ function Invoke-CommandScript {
     )
     
     if ($Arguments -and $Arguments.Count -gt 0) {
-        # Construir argumentos como string para pasarlos correctamente
+        # Reconstruir los argumentos como string para permitir parametros nombrados (-Param Valor)
+        # Array splatting (@Args) trata todo como posicional, lo cual rompe los parametros nombrados
         $argString = $Arguments -join ' '
         $fullCommand = "& '$ScriptPath' $argString"
         Invoke-Expression $fullCommand
@@ -201,6 +206,9 @@ switch ($Action) {
     }
     "cache" {
         Invoke-CommandScript -ScriptPath "$CommandsPath\cache-site.ps1" -Arguments $RemainingArgs
+    }
+    "git-status" {
+        Invoke-CommandScript -ScriptPath "$CommandsPath\git-status.ps1" -Arguments $RemainingArgs
     }
     default {
         Show-Help
