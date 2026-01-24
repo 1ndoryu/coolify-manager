@@ -79,6 +79,11 @@ function Install-GloryTheme {
 #!/bin/bash
 set -e
 
+# Evitar prompts interactivos
+export GIT_TERMINAL_PROMPT=0
+export COMPOSER_NO_INTERACTION=1
+export DEBIAN_FRONTEND=noninteractive
+
 THEME_NAME="$ThemeName"
 THEME_PATH="/var/www/html/wp-content/themes/`$THEME_NAME"
 LIBRARY_PATH="`$THEME_PATH/Glory"
@@ -198,6 +203,11 @@ function Update-GloryTheme {
 #!/bin/bash
 set -e
 
+# Evitar prompts interactivos
+export GIT_TERMINAL_PROMPT=0
+export COMPOSER_NO_INTERACTION=1
+export DEBIAN_FRONTEND=noninteractive
+
 THEME_NAME="$ThemeName"
 THEME_PATH="/var/www/html/wp-content/themes/`$THEME_NAME"
 LIBRARY_PATH="`$THEME_PATH/Glory"
@@ -298,10 +308,7 @@ echo "[SUCCESS] Actualizacion completada!"
     
     $result = Invoke-DockerExec -ContainerId $containerId -Command $updateScript
     
-    # Mostrar output del script
-    if ($result) {
-        Write-Host $result -ForegroundColor Gray
-    }
+    # El output ya se mostro en tiempo real via Invoke-DockerExec
     
     # Verificar si hubo exito (buscar [SUCCESS] en el output)
     if ($result -like "*[SUCCESS]*") {

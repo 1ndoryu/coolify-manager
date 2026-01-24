@@ -170,9 +170,15 @@ function Invoke-DockerExec {
         ssh $sshTarget $chmodCmd 2>&1 | Out-Null
         
         # Ejecutar el script
-        Write-Host "Ejecutando script en contenedor..." -ForegroundColor DarkGray
+        # Ejecutar el script
+        Write-Host "Ejecutando script en contenedor..." -ForegroundColor Cyan
         $execCmd = "docker exec -u $User $ContainerId bash $tempScriptPath"
-        $result = ssh $sshTarget $execCmd 2>&1
+        
+        $result = @()
+        ssh $sshTarget $execCmd 2>&1 | ForEach-Object {
+            Write-Host $_ -ForegroundColor Gray
+            $result += $_
+        }
         
         # Limpiar script temporal
         $cleanupCmd = "docker exec -u $User $ContainerId rm -f $tempScriptPath"
