@@ -319,7 +319,13 @@ else
     cd `$LIBRARY_PATH
     git fetch --all
     git checkout `$LIBRARY_BRANCH
-    git pull origin `$LIBRARY_BRANCH
+    
+    if [ "$Force" = "True" ]; then
+        echo "[WARN] Realizando HARD RESET libreria a origin/`$LIBRARY_BRANCH..."
+        git reset --hard "origin/`$LIBRARY_BRANCH"
+    else
+        git pull origin `$LIBRARY_BRANCH
+    fi
 fi
 
 
