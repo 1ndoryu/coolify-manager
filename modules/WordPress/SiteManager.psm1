@@ -49,16 +49,17 @@ function Set-WordPressUrls {
         Actualiza las opciones 'home' y 'siteurl' en la base de datos de WordPress
         para reflejar el nuevo dominio.
     .PARAMETER StackName
-        Nombre del stack
+        Nombre del stack (opcional si se proporciona StackUuid)
     .PARAMETER StackUuid
-        UUID del stack (opcional, recomendado)
+        UUID del stack (preferido, mas confiable)
     .PARAMETER Domain
         Dominio nuevo con protocolo (ej: https://mi-sitio.com)
+    .EXAMPLE
+        Set-WordPressUrls -StackUuid "zkcc040cc0scock4kcooowkc" -Domain "https://padel.wandori.us"
     .EXAMPLE
         Set-WordPressUrls -StackName "padel-stack" -Domain "https://padel.wandori.us"
     #>
     param(
-        [Parameter(Mandatory)]
         [string]$StackName,
         
         [string]$StackUuid,
@@ -67,12 +68,18 @@ function Set-WordPressUrls {
         [string]$Domain
     )
     
-    Write-Log -Level INFO -Message "Actualizando URLs de $StackName a $Domain" -Source "Set-WordPressUrls"
+    # Validar que al menos uno de los dos identificadores este presente
+    if (-not $StackName -and -not $StackUuid) {
+        throw "Debe proporcionar StackName o StackUuid"
+    }
+    
+    $identifier = if ($StackUuid) { "UUID: $StackUuid" } else { "Stack: $StackName" }
+    Write-Log -Level INFO -Message "Actualizando URLs ($identifier) a $Domain" -Source "Set-WordPressUrls"
     
     $containerId = Get-WordPressContainerId -StackName $StackName -Uuid $StackUuid
     
     if (-not $containerId) {
-        $errorMsg = "No se encontro contenedor WordPress para el stack: $StackName"
+        $errorMsg = "No se encontro contenedor WordPress ($identifier)"
         Write-Log -Level ERROR -Message $errorMsg -Source "Set-WordPressUrls"
         throw $errorMsg
     }
@@ -95,8 +102,114 @@ echo 'URLs actualizadas a: $Domain';
     
     Remove-Item $tempFile -Force
     
-    Write-Log -Level INFO -Message "URLs actualizadas para $StackName" -Source "Set-WordPressUrls"
+    Write-Log -Level INFO -Message "URLs actualizadas ($identifier)" -Source "Set-WordPressUrls"
     Write-Host $result -ForegroundColor Green
+}
+
+function Enable-GloryTheme {
+    <#
+    .SYNOPSIS
+        Activa el tema Glory en WordPress
+    .DESCRIPTION
+        Ejecuta switch_theme() para activar el tema Glory despues de instalarlo.
+    .PARAMETER StackName
+        Nombre del stack (opcional si se proporciona StackUuid)
+    .PARAMETER StackUuid
+        UUID del stack (preferido)
+    .PARAMETER ThemeName
+        Nombre de la carpeta del tema (default: glory)
+    .EXAMPLE
+        Enable-GloryTheme -StackUuid "zkcc040cc0scock4kcooowkc"
+    .EXAMPLE
+        Enable-GloryTheme -StackUuid "zkcc040cc0scock4kcooowkc" -ThemeName "Padel"
+    #>
+    param(
+        [string]$StackName,
+        
+        [string]$StackUuid,
+        
+        [string]$ThemeName = "glory"
+    )
+    
+    # Validar que al menos uno de los dos identificadores este presente
+    if (-not $StackName -and -not $StackUuid) {
+        throw "Debe proporcionar StackName o StackUuid"
+    }
+    
+    $identifier = if ($StackUuid) { "UUID: $StackUuid" } else { "Stack: $StackName" }
+    Write-Log -Level INFO -Message "Activando tema '$ThemeName' ($identifier)" -Source "Enable-GloryTheme"
+    
+    $containerId = Get-WordPressContainerId -StackName $StackName -Uuid $StackUuid
+    
+    if (-not $containerId) {
+        $errorMsg = "No se encontro contenedor WordPress ($identifier)"
+        Write-Log -Level ERROR -Message $errorMsg -Source "Enable-GloryTheme"
+        throw $errorMsg
+    }
+    
+    # Script PHP para activar el tema
+    # Definimos HTTP_HOST para evitar warnings al ejecutar desde CLI
+    $phpScript = @"
+<?php
+// Suprimir warnings de CLI (HTTP_HOST no definido)
+error_reporting(E_ERROR | E_PARSE);
+
+// Definir HTTP_HOST si no existe (necesario para wp-load.php en CLI)
+if (!isset(`$_SERVER['HTTP_HOST'])) {
+    `$_SERVER['HTTP_HOST'] = 'localhost';
+}
+
+require '/var/www/html/wp-load.php';
+
+`$theme_name = '$ThemeName';
+`$current_theme = wp_get_theme();
+
+// Verificar si el tema existe
+`$theme = wp_get_theme(`$theme_name);
+if (!`$theme->exists()) {
+    echo "ERROR: El tema '`$theme_name' no existe en el servidor.";
+    exit(1);
+}
+
+// Verificar si ya esta activo
+if (`$current_theme->get_stylesheet() === `$theme_name) {
+    echo "INFO: El tema '`$theme_name' ya esta activo.";
+    exit(0);
+}
+
+// Activar el tema
+switch_theme(`$theme_name);
+
+// Verificar activacion
+`$new_theme = wp_get_theme();
+if (`$new_theme->get_stylesheet() === `$theme_name) {
+    echo "SUCCESS: Tema '`$theme_name' activado correctamente.";
+} else {
+    echo "ERROR: No se pudo activar el tema '`$theme_name'.";
+    exit(1);
+}
+"@
+    
+    $tempFile = Join-Path $env:TEMP "activate_theme_$(Get-Random).php"
+    $phpScript | Out-File -FilePath $tempFile -Encoding UTF8
+    
+    Copy-FileToContainer -LocalPath $tempFile -ContainerId $containerId -ContainerPath "/var/www/html/activate_theme.php"
+    
+    $result = Invoke-DockerExec -ContainerId $containerId -Command "php /var/www/html/activate_theme.php" -User "www-data"
+    Invoke-DockerExec -ContainerId $containerId -Command "rm /var/www/html/activate_theme.php"
+    
+    Remove-Item $tempFile -Force
+    
+    if ($result -like "*SUCCESS*" -or $result -like "*INFO*") {
+        Write-Log -Level INFO -Message "Tema activado: $ThemeName ($identifier)" -Source "Enable-GloryTheme"
+        Write-Host $result -ForegroundColor Green
+    }
+    else {
+        Write-Log -Level ERROR -Message "Error activando tema: $result" -Source "Enable-GloryTheme"
+        Write-Host $result -ForegroundColor Red
+    }
+    
+    return $result
 }
 
 function New-WordPressAdmin {
@@ -214,6 +327,7 @@ echo get_option('$OptionName');
 Export-ModuleMember -Function @(
     'Get-SiteConfig',
     'Set-WordPressUrls',
+    'Enable-GloryTheme',
     'New-WordPressAdmin',
     'Get-WordPressOption'
 )

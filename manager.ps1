@@ -156,10 +156,40 @@ function Invoke-CommandScript {
     )
     
     if ($Arguments -and $Arguments.Count -gt 0) {
-        # Reconstruir los argumentos como string para permitir parametros nombrados (-Param Valor)
-        # Array splatting (@Args) trata todo como posicional, lo cual rompe los parametros nombrados
-        $argString = $Arguments -join ' '
+        <#
+        Reconstruir los argumentos preservando comillas.
+        El problema: PowerShell ya proceso los argumentos, asi que perdemos las comillas originales.
+        
+        Solucion: Reconstruir cada argumento entre comillas si contiene espacios o guiones que 
+        podrian confundir al parser.
+        
+        Para el caso especial de -Command "ls -la", el valor "ls -la" se recibe como UN solo
+        argumento (el contenido de las comillas), asi que lo re-citamos.
+        #>
+        $rebuiltArgs = @()
+        foreach ($arg in $Arguments) {
+            if ($arg -match '^-[A-Za-z]') {
+                # Es un parametro nombrado, pasarlo tal cual
+                $rebuiltArgs += $arg
+            }
+            elseif ($arg -match '\s' -or $arg -match '^-') {
+                # Contiene espacios o empieza con guion (comando como "ls -la")
+                # Escapar comillas dobles internas y envolver en comillas dobles
+                $escapedArg = $arg -replace '"', '`"'
+                $rebuiltArgs += "`"$escapedArg`""
+            }
+            else {
+                # Argumento simple
+                $rebuiltArgs += $arg
+            }
+        }
+        
+        $argString = $rebuiltArgs -join ' '
         $fullCommand = "& '$ScriptPath' $argString"
+        
+        # Debug: mostrar comando reconstruido
+        # Write-Host "DEBUG: $fullCommand" -ForegroundColor DarkGray
+        
         Invoke-Expression $fullCommand
     }
     else {

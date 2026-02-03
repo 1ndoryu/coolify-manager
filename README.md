@@ -14,19 +14,36 @@
 
 ---
 
+## 🎉 Novedades - Febrero 2026
+
+**Todas las mejoras principales implementadas:**
+
+- ✅ **Flujo completamente automatizado**: Un solo comando crea el sitio completo
+- ✅ **Activación automática del tema**: Glory se activa automáticamente después de instalarse
+- ✅ **URLs auto-configuradas**: WordPress queda con el dominio correcto desde el inicio
+- ✅ **Comando `exec` mejorado**: Soporta argumentos complejos con guiones y espacios
+- ✅ **Código PHP sin problemas de escape**: Usa archivos temporales para máxima compatibilidad
+
+Ver [MEJORAS-PENDIENTES.md](docs/MEJORAS-PENDIENTES.md) para detalles técnicos.
+
+---
+
 ## Descripción
 
 **Coolify Manager** es una CLI en PowerShell que automatiza la gestión de sitios WordPress desplegados en [Coolify](https://coolify.io/). Diseñada tanto para uso manual como para integración con asistentes de IA.
 
 ### Características
 
-- Crear stacks WordPress completos (WordPress + MariaDB)
-- Gestionar múltiples sitios desde una sola herramienta
-- Desplegar y actualizar temas automáticamente
-- Importar bases de datos con corrección de URLs
-- Ejecutar comandos en contenedores Docker
-- Ver logs en tiempo real
-- Sistema de validación y logging integrado
+- ✅ Crear stacks WordPress completos (WordPress + MariaDB)
+- ✅ Gestionar múltiples sitios desde una sola herramienta
+- ✅ Desplegar y actualizar temas automáticamente
+- ✅ **Activación automática del tema Glory después de instalarlo**
+- ✅ **Configuración automática de URLs de WordPress**
+- ✅ Importar bases de datos con corrección de URLs
+- ✅ Ejecutar comandos en contenedores Docker (bash y PHP)
+- ✅ Ver logs en tiempo real
+- ✅ Sistema de validación y logging integrado
+- ✅ Flujo completamente automatizado: un comando crea todo el sitio listo para usar
 
 ---
 
@@ -136,10 +153,27 @@ Obtiene información detallada del repositorio git en el servidor (rama actual, 
 
 ### `new` - Crear sitio
 
+Crea un stack WordPress completo con instalación y activación automática del tema Glory.
+
 ```powershell
+# Crear sitio con tema Glory (instalación y activación automática)
 .\manager.ps1 new -SiteName "tienda" -Domain "https://tienda.com"
+
+# Especificar rama del tema
+.\manager.ps1 new -SiteName "blog" -Domain "https://blog.com" -GloryBranch "main"
+
+# Omitir instalación del tema
 .\manager.ps1 new -SiteName "test" -Domain "https://test.com" -SkipTheme
 ```
+
+**Pasos automáticos:**
+1. Crear stack en Coolify (WordPress + MariaDB)
+2. Esperar a que los contenedores inicien
+3. Instalar tema Glory (clonar, composer, npm, build)
+4. **Activar tema Glory automáticamente**
+5. **Configurar URLs de WordPress con el dominio correcto**
+6. Agregar sitio a `settings.json`
+7. Mostrar credenciales de base de datos
 
 ### `restart` - Reiniciar
 
@@ -166,13 +200,27 @@ Obtiene información detallada del repositorio git en el servidor (rama actual, 
 
 ### `exec` - Ejecutar comandos
 
+Ejecuta comandos bash o código PHP en contenedores. Soporta argumentos complejos con espacios y caracteres especiales.
+
 ```powershell
-# Comando bash
+# Comando bash (soporta argumentos con guiones)
 .\manager.ps1 exec -SiteName "blog" -Command "ls -la /var/www/html"
 
-# Código PHP
+# Comando con pipes y redirección
+.\manager.ps1 exec -SiteName "blog" -Command "cat wp-config.php | grep DB_NAME"
+
+# Código PHP (se ejecuta con wp-load.php cargado)
 .\manager.ps1 exec -SiteName "blog" -PhpCode "echo get_option('siteurl');"
+.\manager.ps1 exec -SiteName "blog" -PhpCode "echo 'Admin email: ' . get_option('admin_email');"
+
+# Ejecutar en contenedor MariaDB
+.\manager.ps1 exec -SiteName "blog" -Command "mysql --version" -Target mariadb
 ```
+
+**Mejoras recientes:**
+- ✅ Soporta argumentos con guiones (ej: `ls -la`)
+- ✅ Código PHP usa archivos temporales (evita problemas de escape)
+- ✅ Captura correcta de output y errores
 
 ### `logs` - Ver logs
 
@@ -329,7 +377,7 @@ Restart-CoolifyService -Uuid "abc123..."
 | SshOperations.psm1             | Invoke-SshCommand, Get-DockerContainers, etc.              |
 | WordPress/ThemeManager.psm1    | Install-GloryTheme, Update-GloryTheme                      |
 | WordPress/DatabaseManager.psm1 | Import-WordPressDatabase, Export-WordPressDatabase         |
-| WordPress/SiteManager.psm1     | Get-SiteConfig, Set-WordPressUrls, New-WordPressAdmin      |
+| WordPress/SiteManager.psm1     | Get-SiteConfig, Set-WordPressUrls, Enable-GloryTheme, New-WordPressAdmin |
 | WordPress/CacheManager.psm1    | Get-CacheStatus, Enable-CacheHeaders, Disable-CacheHeaders |
 | Core/Validators.psm1           | Test-SiteExists, Test-DomainFormat, Assert-SiteReady       |
 | Core/Logger.psm1               | Write-Log, Get-LogEntries, Clear-OldLogs                   |

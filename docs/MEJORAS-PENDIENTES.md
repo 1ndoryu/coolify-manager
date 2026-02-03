@@ -1,138 +1,102 @@
 # Mejoras Pendientes - Coolify Manager
 
-> **Última actualización:** 2026-01-21  
-> **Contexto:** Problemas detectados durante el despliegue de `cap.wandori.us`
+> **Última actualización:** 2026-02-03  
+> **Contexto:** Problemas detectados durante el despliegue de `cap.wandori.us`  
+> **Estado:** ✅ TODAS LAS MEJORAS PRINCIPALES IMPLEMENTADAS
 
 ---
 
-## Resumen de Problemas
+## Resumen de Mejoras Implementadas
 
-Durante el despliegue del sitio CAP se identificaron varios pasos que requirieron intervención manual, lo que ralentiza el proceso y complica el flujo de trabajo.
-
----
-
-## 1. Comando `new` Incompleto
-
-### Problema
-El comando `new-site.ps1` falla en el paso 3 (instalación del tema) con el error:
-```
-A parameter cannot be found that matches parameter name 'StackName'.
-```
-
-### Impacto
-- El stack se crea correctamente en Coolify
-- El tema NO se instala automáticamente
-- Se debe ejecutar `deploy` manualmente después
-
-### Solución Propuesta
-- Revisar los parámetros pasados a `Install-GloryTheme` en `new-site.ps1`
-- El parámetro debería ser `StackUuid` o similar, no `StackName`
-- Agregar el sitio automáticamente a `settings.json` después de crear el stack
+Todas las mejoras principales han sido implementadas y probadas con un servidor de prueba (`test-mejoras.wandori.us`).
 
 ---
 
-## 2. Configuración de URLs de WordPress
+## 1. ✅ Comando `new` - SOLUCIONADO
 
-### Problema
-Después de crear el stack, WordPress queda configurado con URLs por defecto (localhost o IP), no con el dominio configurado en Coolify.
+### Problema Original
+El comando `new-site.ps1` fallaba con el error de parámetro `StackName`.
 
-### Pasos Manuales Actuales
-1. Ir al panel de WordPress → Ajustes → Generales
-2. Cambiar "Dirección de WordPress" y "Dirección del sitio" al dominio correcto
-3. Reiniciar el stack desde Coolify
+### Solución Implementada
+- Corregido `new-site.ps1` para usar `StackUuid` en lugar de `StackName`
+- El tema ahora se instala correctamente usando `Install-GloryTheme -StackUuid $stackResult.uuid`
 
-### Solución Propuesta
-Agregar al comando `new` un paso automático que:
-```php
-update_option('siteurl', 'https://DOMINIO');
-update_option('home', 'https://DOMINIO');
-```
-
-O crear un nuevo comando:
-```powershell
-.\manager.ps1 set-url -SiteName "cap" -Domain "https://cap.wandori.us"
-```
+**Archivo modificado:** [new-site.ps1](../commands/new-site.ps1)
 
 ---
 
-## 3. Activación del Tema
+## 2. ✅ Configuración de URLs de WordPress - SOLUCIONADO
 
-### Problema
-Después de instalar el tema Glory, este no se activa automáticamente. El tema por defecto de WordPress sigue activo.
+### Problema Original
+WordPress quedaba configurado con URLs por defecto (localhost o IP).
 
-### Pasos Manuales Actuales
-1. Ir a WordPress → Apariencia → Temas
-2. Activar el tema "Glory" manualmente
+### Solución Implementada
+- `Set-WordPressUrls` ahora acepta `StackUuid` como parámetro preferido
+- Se llama automáticamente después de crear el stack con el dominio correcto
 
-### Solución Propuesta
-Agregar al final de `Install-GloryTheme` o `deploy-theme.ps1`:
-```php
-switch_theme('glory');
-```
+**Archivo modificado:** [SiteManager.psm1](../modules/WordPress/SiteManager.psm1)
 
 ---
 
-## 4. Comando `exec` con Problemas de Parsing
+## 3. ✅ Activación del Tema - SOLUCIONADO
 
-### Problema
-El comando `exec` tiene problemas al parsear argumentos con espacios, guiones o caracteres especiales:
+### Problema Original
+El tema Glory no se activaba automáticamente después de instalarlo.
+
+### Solución Implementada
+- Nueva función `Enable-GloryTheme` que ejecuta `switch_theme()` en WordPress
+- Se llama automáticamente desde `new-site.ps1` después de instalar el tema
+- Incluye supresión de warnings de CLI (HTTP_HOST no definido)
+
+**Archivo modificado:** [SiteManager.psm1](../modules/WordPress/SiteManager.psm1), [new-site.ps1](../commands/new-site.ps1)
+
+---
+
+## 4. ✅ Comando `exec` con Problemas de Parsing - SOLUCIONADO
+
+### Problema Original
 ```powershell
 .\manager.ps1 exec -SiteName "cap" -Command "ls -la /var/www/html"
 # Error: A parameter cannot be found that matches parameter name 'la'.
 ```
 
-### Impacto
-- No se pueden ejecutar comandos bash complejos
-- No se puede ejecutar código PHP con paréntesis/comillas
+### Solución Implementada
+- Agregado parámetro `RawArgs` con `ValueFromRemainingArguments` para capturar argumentos extra
+- Mejorado el manejo de comandos PHP usando archivos temporales en lugar de `php -r`
+- Corregido el escape de comillas en `manager.ps1 > Invoke-CommandScript`
 
-### Solución Propuesta
-- Revisar el parsing de argumentos en `exec-command.ps1`
-- Usar `$args` o `ValueFromRemainingArguments` para capturar todo el comando
-- Escapar correctamente las comillas al construir el comando SSH
+**Archivos modificados:** [exec-command.ps1](../commands/exec-command.ps1), [manager.ps1](../manager.ps1)
 
 ---
 
-## 5. Agregar Sitio a settings.json Automáticamente
+## 5. ✅ Agregar Sitio a settings.json - YA FUNCIONABA
 
-### Problema
-Después de crear un stack con `new`, el sitio NO se agrega automáticamente a `config/settings.json`.
-
-### Pasos Manuales Actuales
-1. Copiar el `stackUuid` del output
-2. Editar `settings.json` manualmente
-3. Agregar el nuevo sitio con todos sus campos
-
-### Solución Propuesta
-Al final de `new-site.ps1`, agregar lógica para:
-1. Leer el JSON actual
-2. Agregar el nuevo sitio al array `sitios`
-3. Guardar el JSON actualizado
+### Estado
+Esta funcionalidad ya estaba implementada correctamente en `new-site.ps1`.
+El sitio se agrega automáticamente al array `sitios` después de crear el stack.
 
 ---
 
-## 6. Flujo Ideal Post-Mejoras
+## 6. ✅ Flujo Ideal - IMPLEMENTADO
 
-Una vez implementadas las mejoras, el flujo debería ser:
+El flujo ahora funciona completamente con un solo comando:
 
 ```powershell
-# Un solo comando hace todo
-.\manager.ps1 new -SiteName "cap" -Domain "https://cap.wandori.us" -GloryBranch "glory-react-calendarioesc"
+.\manager.ps1 new -SiteName "mi-sitio" -Domain "https://mi-sitio.wandori.us" -GloryBranch "main"
 ```
 
 **Pasos automáticos:**
 1. ✅ Crear stack en Coolify (WordPress + MariaDB)
 2. ✅ Esperar a que los contenedores inicien
-3. 🔧 Configurar URLs de WordPress automáticamente
+3. ✅ Configurar URLs de WordPress automáticamente
 4. ✅ Instalar tema Glory (clonar, composer, npm, build)
-5. 🔧 Activar tema Glory automáticamente
-6. 🔧 Agregar sitio a `settings.json`
+5. ✅ Activar tema Glory automáticamente
+6. ✅ Agregar sitio a `settings.json`
 7. ✅ Mostrar resumen y credenciales
-
-**Leyenda:** ✅ Ya funciona | 🔧 Necesita implementar
 
 ---
 
-## 7. Mejoras Secundarias
+## 7. Mejoras Secundarias (Pendientes)
 
 ### 7.1 Validación de Dominio Pre-Despliegue
 Verificar que el dominio apunte al VPS antes de configurar HTTPS.
@@ -174,3 +138,21 @@ Si falla un paso, limpiar los recursos creados (stack, contenedores).
 4. Reiniciar stack
 
 **Tiempo total:** ~25 minutos (debería ser ~5 minutos con automatización completa)
+
+---
+
+## Prueba de Mejoras - 2026-02-03
+
+**Sitio de prueba:** test-mejoras.wandori.us  
+**Stack UUID:** `e4ccskg4ssscsgw00g4o408s`  
+**Branch:** `main`  
+
+**Resultado del test:**
+- ✅ Stack creado correctamente
+- ✅ Tema instalado automáticamente (composer + npm)
+- ✅ Función `Enable-GloryTheme` ejecutada
+- ✅ URLs configuradas automáticamente
+- ✅ Sitio agregado a `settings.json`
+- ✅ Comando `exec` funciona con argumentos complejos (`ls -la`)
+
+**Tiempo total:** ~3-4 minutos (automatizado completamente)

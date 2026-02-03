@@ -77,15 +77,19 @@ Start-Sleep -Seconds 30
 if (-not $SkipTheme) {
     Write-Host ""
     Write-Host "[3/5] Instalando tema Glory..." -ForegroundColor Yellow
-    Install-GloryTheme -StackName $stackName -GloryBranch $GloryBranch -LibraryBranch $LibraryBranch
+    Install-GloryTheme -StackUuid $stackResult.uuid -GloryBranch $GloryBranch -LibraryBranch $LibraryBranch
+    
+    Write-Host ""
+    Write-Host "  Activando tema Glory..." -ForegroundColor Yellow
+    Enable-GloryTheme -StackUuid $stackResult.uuid -ThemeName "glory"
 }
 else {
     Write-Host "[3/5] Instalacion de tema omitida (flag -SkipTheme)" -ForegroundColor DarkGray
 }
 
 Write-Host ""
-Write-Host "[4/5] Configurando URLs..." -ForegroundColor Yellow
-Set-WordPressUrls -StackName $stackName -Domain $Domain
+Write-Host "[4/5] Configurando URLs y activando tema..." -ForegroundColor Yellow
+Set-WordPressUrls -StackUuid $stackResult.uuid -Domain $Domain
 
 <#
     Paso 5: Cache Headers

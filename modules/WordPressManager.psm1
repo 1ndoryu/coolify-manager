@@ -40,6 +40,7 @@ Export-ModuleMember -Function @(
     # Desde SiteManager.psm1
     'Get-SiteConfig',
     'Set-WordPressUrls',
+    'Enable-GloryTheme',
     'New-WordPressAdmin',
     'Get-WordPressOption'
 )
