@@ -40,7 +40,15 @@ function Invoke-SshCommand {
         Write-Host "Ejecutando en VPS: $Command" -ForegroundColor DarkGray
     }
     
-    $result = ssh $sshTarget $Command 2>&1
+    # Suprimir errores nativos falsos (algunos comandos envian info a stderr)
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
+    try {
+        $result = ssh $sshTarget $Command 2>&1
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
     return $result
 }
 
@@ -175,9 +183,18 @@ function Invoke-DockerExec {
         $execCmd = "docker exec -u $User $ContainerId bash $tempScriptPath"
         
         $result = @()
-        ssh $sshTarget $execCmd 2>&1 | ForEach-Object {
-            Write-Host $_ -ForegroundColor Gray
-            $result += $_
+        # Suprimir errores nativos falsos (git envia mensajes informativos a stderr)
+        $previousErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = 'SilentlyContinue'
+        try {
+            ssh $sshTarget $execCmd 2>&1 | ForEach-Object {
+                $line = $_.ToString()
+                Write-Host $line -ForegroundColor Gray
+                $result += $line
+            }
+        }
+        finally {
+            $ErrorActionPreference = $previousErrorActionPreference
         }
         
         # Limpiar script temporal
