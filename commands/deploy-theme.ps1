@@ -70,6 +70,11 @@ if (-not $LibraryBranch) { $LibraryBranch = $sitio.libraryBranch }
 $themeName = $sitio.themeName
 if (-not $themeName) { $themeName = "glory" }
 
+if (-not $SkipReact.IsPresent -and $sitio.skipReact) { 
+    $SkipReact = $true 
+    Write-Host "Configuracion de sitio: SkipReact ACTIVADO" -ForegroundColor Yellow
+}
+
 $stackUuid = $sitio.stackUuid
 
 Write-Host "Sitio: $SiteName" -ForegroundColor White
@@ -77,13 +82,15 @@ Write-Host "Rama tema: $GloryBranch" -ForegroundColor White
 Write-Host "Rama libreria: $LibraryBranch" -ForegroundColor White
 Write-Host "Carpeta tema: $themeName" -ForegroundColor White
 Write-Host "Stack UUID: $stackUuid" -ForegroundColor DarkGray
+if ($SkipReact) { Write-Host "Omitir React: SI" -ForegroundColor Yellow }
 Write-Host ""
 
 if ($Update) {
     Write-Host "Modo: ACTUALIZACION (git pull)" -ForegroundColor Yellow
     if ($Force) { Write-Host "MODO FORCE: RESET --HARD ACTIVADO" -ForegroundColor Red }
-    Update-GloryTheme -StackUuid $stackUuid -ThemeName $themeName -GloryBranch $GloryBranch -LibraryBranch $LibraryBranch -Force:$Force
+    Update-GloryTheme -StackUuid $stackUuid -ThemeName $themeName -GloryBranch $GloryBranch -LibraryBranch $LibraryBranch -Force:$Force -SkipReact:$SkipReact
 }
+
 else {
     Write-Host "Modo: INSTALACION COMPLETA" -ForegroundColor Yellow
     

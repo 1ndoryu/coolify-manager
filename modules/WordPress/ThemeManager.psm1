@@ -172,7 +172,9 @@ function Update-GloryTheme {
 
         [string]$LibraryBranch = "main",
 
-        [switch]$Force
+    [switch]$Force,
+        
+        [switch]$SkipReact
     )
     
     Write-Log -Level INFO -Message "Actualizando tema Glory (ThemeName: $ThemeName, UUID: $StackUuid)" -Source "Update-GloryTheme"
@@ -333,13 +335,25 @@ fi
 echo "[INFO] Instalando dependencias PHP..."
 cd `$THEME_PATH
 composer install --no-dev --optimize-autoloader
+"@
 
+    $reactScript = @"
 # Compilar React
 echo "[INFO] Compilando React..."
 cd `$LIBRARY_PATH/assets/react
 npm install
 npm run build
+"@
+    
+    # Construir el script final combinando update y opcionalmente react
+    if (-not $SkipReact) {
+         $finalScript = $updateScript + "`n" + $reactScript
+    } else {
+         $finalScript = $updateScript + "`n echo '[INFO] Saltando compilacion de React'"
+    }
 
+    $finalScript += @"
+    
 # Corregir permisos
 echo "[INFO] Corrigiendo permisos..."
 chown -R www-data:www-data `$THEME_PATH
@@ -347,7 +361,9 @@ chown -R www-data:www-data `$THEME_PATH
 echo "[SUCCESS] Actualizacion completada!"
 "@
     
-    $result = Invoke-DockerExec -ContainerId $containerId -Command $updateScript
+    $result = Invoke-DockerExec -ContainerId $containerId -Command $finalScript
+
+
     
     # El output ya se mostro en tiempo real via Invoke-DockerExec
     

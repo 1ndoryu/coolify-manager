@@ -177,24 +177,79 @@ function Invoke-DockerExec {
         $chmodCmd = "docker exec -u $User $ContainerId chmod +x $tempScriptPath"
         ssh $sshTarget $chmodCmd 2>&1 | Out-Null
         
-        # Ejecutar el script
-        # Ejecutar el script
+        # Ejecutar el script con streaming en tiempo real
+        # Esto muestra el output mientras se ejecuta, en lugar de esperar a que termine
         Write-Host "Ejecutando script en contenedor..." -ForegroundColor Cyan
-        $execCmd = "docker exec -u $User $ContainerId bash $tempScriptPath"
+        $execCmd = "docker exec -u $User $ContainerId bash $tempScriptPath 2>&1"
         
         $result = @()
-        # Suprimir errores nativos falsos (git envia mensajes informativos a stderr)
-        $previousErrorActionPreference = $ErrorActionPreference
-        $ErrorActionPreference = 'SilentlyContinue'
+        
+        # Usar un proceso separado para capturar output en tiempo real
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = "ssh"
+        $psi.Arguments = "$sshTarget `"$execCmd`""
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+        
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $psi
+        
+        # Registrar evento para stderr (para debug si es necesario)
+        $stderrBuilder = New-Object System.Text.StringBuilder
+        $stderrHandler = {
+            if (-not [String]::IsNullOrEmpty($EventArgs.Data)) {
+                $stderrBuilder.AppendLine($EventArgs.Data) | Out-Null
+            }
+        }
+        $process.add_ErrorDataReceived($stderrHandler)
+        
         try {
-            ssh $sshTarget $execCmd 2>&1 | ForEach-Object {
-                $line = $_.ToString()
-                Write-Host $line -ForegroundColor Gray
-                $result += $line
+            $process.Start() | Out-Null
+            $process.BeginErrorReadLine()
+            
+            # Leer stdout línea por línea en tiempo real
+            while (-not $process.StandardOutput.EndOfStream) {
+                $line = $process.StandardOutput.ReadLine()
+                if ($line) {
+                    # Colorear según el contenido
+                    if ($line -like "*[ERROR]*" -or $line -like "*error:*") {
+                        Write-Host $line -ForegroundColor Red
+                    }
+                    elseif ($line -like "*[WARN]*" -or $line -like "*warning:*") {
+                        Write-Host $line -ForegroundColor Yellow
+                    }
+                    elseif ($line -like "*[SUCCESS]*" -or $line -like "*[OK]*") {
+                        Write-Host $line -ForegroundColor Green
+                    }
+                    elseif ($line -like "*[INFO]*") {
+                        Write-Host $line -ForegroundColor Cyan
+                    }
+                    else {
+                        Write-Host $line -ForegroundColor Gray
+                    }
+                    $result += $line
+                }
+            }
+            
+            $process.WaitForExit()
+            
+            # Mostrar stderr si hubo contenido (debug)
+            $stderrContent = $stderrBuilder.ToString().Trim()
+            if ($stderrContent -and $stderrContent.Length -gt 0) {
+                # Solo mostrar si parece un error real, no warnings de git/npm
+                if ($stderrContent -notlike "*Already up to date*" -and
+                    $stderrContent -notlike "*npm warn*") {
+                    Write-Host "[stderr] $stderrContent" -ForegroundColor DarkYellow
+                }
             }
         }
         finally {
-            $ErrorActionPreference = $previousErrorActionPreference
+            if ($process -and -not $process.HasExited) {
+                $process.Kill()
+            }
+            $process.Dispose()
         }
         
         # Limpiar script temporal

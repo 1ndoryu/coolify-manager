@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Coolify Manager - Herramienta de gestion de sitios WordPress.
 .DESCRIPTION
