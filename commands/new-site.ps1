@@ -39,6 +39,8 @@ param(
     
     [string]$LibraryBranch = "main",
     
+    [string]$Template = "wordpress",
+    
     [switch]$SkipTheme,
     
     [switch]$SkipCache
@@ -60,12 +62,13 @@ Write-Host ""
 Write-Host "Sitio: $SiteName" -ForegroundColor White
 Write-Host "Dominio: $Domain" -ForegroundColor White
 Write-Host "Rama Glory: $GloryBranch" -ForegroundColor White
+Write-Host "Template: $Template" -ForegroundColor White
 Write-Host ""
 
 $stackName = "$SiteName-stack"
 
 Write-Host "[1/5] Creando stack en Coolify..." -ForegroundColor Yellow
-$stackResult = New-CoolifyWordPressStack -SiteName $SiteName -Domain $Domain
+$stackResult = New-CoolifyWordPressStack -SiteName $SiteName -Domain $Domain -Template $Template
 
 Write-Host ""
 Write-Host "[2/5] Desplegando stack..." -ForegroundColor Yellow
@@ -155,6 +158,15 @@ $nuevoSitio = @{
     stackUuid     = $stackResult.uuid
     gloryBranch   = $GloryBranch
     libraryBranch = $LibraryBranch
+    template      = $Template
+}
+
+# Si es kamples, guardar PG password y agregar referencia al template
+if ($Template -eq "kamples" -and $stackResult.pgPassword) {
+    Write-Host "PG Password: $($stackResult.pgPassword)" -ForegroundColor Yellow
+    Write-Host "" 
+    Write-Host "IMPORTANTE: Guarda el PG Password en la variable de entorno KAMPLES_PG_PASSWORD" -ForegroundColor Red
+    Write-Host "Despues ejecuta: .\manager.ps1 setup-kamples -SiteName $SiteName" -ForegroundColor Cyan
 }
 
 $config.sitios += $nuevoSitio

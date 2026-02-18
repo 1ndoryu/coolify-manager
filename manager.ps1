@@ -25,7 +25,7 @@
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug", "cache", "git-status")]
+    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug", "cache", "git-status", "setup-kamples")]
     [string]$Action = "help",
     
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -96,6 +96,11 @@ function Show-Help {
     Write-Host "    git-status" -ForegroundColor Green -NoNewline
     Write-Host "Diagnostico Git del tema remoto"
     Write-Host "             Ejemplo: .\manager.ps1 git-status -SiteName guillermo"
+    Write-Host ""
+    Write-Host "    setup-kamples" -ForegroundColor Green -NoNewline
+    Write-Host "Configurar Kamples post-creacion (PG, migraciones, build, env)"
+    Write-Host "             Ejemplo: .\manager.ps1 setup-kamples -SiteName kamples"
+    Write-Host "             Ejemplo: .\manager.ps1 setup-kamples -SkipBuild -SkipMigrations"
     Write-Host ""
     Write-Host "    help     " -ForegroundColor Green -NoNewline
     Write-Host "Mostrar esta ayuda"
@@ -239,6 +244,9 @@ switch ($Action) {
     }
     "git-status" {
         Invoke-CommandScript -ScriptPath "$CommandsPath\git-status.ps1" -Arguments $RemainingArgs
+    }
+    "setup-kamples" {
+        Invoke-CommandScript -ScriptPath "$CommandsPath\setup-kamples.ps1" -Arguments $RemainingArgs
     }
     default {
         Show-Help

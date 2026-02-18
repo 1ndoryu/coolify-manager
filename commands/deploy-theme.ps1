@@ -108,6 +108,49 @@ else {
     Install-GloryTheme @params
 }
 
+<#
+    Post-deploy para Kamples: composer install + npm build + env sync.
+    Se ejecuta automaticamente si el sitio tiene template=kamples.
+#>
+if ($sitio.PSObject.Properties['template'] -and $sitio.template -eq "kamples") {
+    Write-Host "" 
+    Write-Host "Detectado template kamples - ejecutando pasos post-deploy..." -ForegroundColor Cyan
+    
+    Import-Module (Join-Path $ModulesPath "SshOperations.psm1") -Force
+    $wpContainerId = Get-WordPressContainerId -Uuid $stackUuid
+    
+    if ($wpContainerId) {
+        $postDeployScript = @"
+#!/bin/bash
+set -e
+THEME_PATH="/var/www/html/wp-content/themes/$themeName"
+cd \`$THEME_PATH
+
+# Composer install (sin dev dependencies)
+if [ -f composer.json ]; then
+    echo "[INFO] composer install --no-dev..."
+    export COMPOSER_NO_INTERACTION=1
+    composer install --no-dev --optimize-autoloader
+fi
+
+# npm install + build (Vite)
+if [ -f package.json ]; then
+    echo "[INFO] npm install..."
+    npm install
+    echo "[INFO] npm run build..."
+    npm run build
+fi
+
+chown -R www-data:www-data \`$THEME_PATH
+echo "[SUCCESS] Post-deploy kamples completado"
+"@
+        Invoke-DockerExec -ContainerId $wpContainerId -Command $postDeployScript
+    }
+    else {
+        Write-Host "WARN: No se encontro contenedor WordPress para post-deploy" -ForegroundColor Yellow
+    }
+}
+
 Write-Host ""
 Write-Host "Tema desplegado exitosamente!" -ForegroundColor Green
 Write-Host ""

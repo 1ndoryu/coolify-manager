@@ -119,13 +119,15 @@ function Get-CoolifyServiceByUuid {
 function New-CoolifyWordPressStack {
     <#
     .SYNOPSIS
-        Crea un nuevo stack WordPress + MariaDB en Coolify
+        Crea un nuevo stack WordPress + MariaDB (o Kamples con PostgreSQL) en Coolify
     .PARAMETER SiteName
         Nombre del sitio (se usara como prefijo del stack)
     .PARAMETER Domain
         Dominio completo (ej: https://mi-sitio.com)
     .PARAMETER DbPassword
         Contrasena para el usuario de BD (se genera si no se proporciona)
+    .PARAMETER Template
+        Nombre del template a usar (default: wordpress). Busca templates/{Template}-stack.yaml
     #>
     param(
         [Parameter(Mandatory)]
@@ -134,7 +136,9 @@ function New-CoolifyWordPressStack {
         [Parameter(Mandatory)]
         [string]$Domain,
         
-        [string]$DbPassword = $null
+        [string]$DbPassword = $null,
+
+        [string]$Template = "wordpress"
     )
     
     $config = Get-CoolifyConfig
@@ -144,11 +148,25 @@ function New-CoolifyWordPressStack {
     }
     $RootPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 20 | ForEach-Object { [char]$_ })
     
-    $templatePath = Join-Path $script:ModuleRoot "templates\wordpress-stack.yaml"
+    # Seleccionar template YAML segun parametro
+    $templatePath = Join-Path $script:ModuleRoot "templates\$Template-stack.yaml"
+    if (-not (Test-Path $templatePath)) {
+        # Fallback al template default
+        $templatePath = Join-Path $script:ModuleRoot "templates\wordpress-stack.yaml"
+        Write-Host "Template '$Template' no encontrado, usando wordpress por defecto" -ForegroundColor Yellow
+    }
+    
     $yaml = Get-Content $templatePath -Raw
     $yaml = $yaml -replace '\{\{DB_PASSWORD\}\}', $DbPassword
     $yaml = $yaml -replace '\{\{ROOT_PASSWORD\}\}', $RootPassword
     $yaml = $yaml -replace '\{\{DOMAIN\}\}', $Domain
+    
+    # Soporte PostgreSQL (template kamples)
+    $PgPassword = $null
+    if ($yaml -match '\{\{PG_PASSWORD\}\}') {
+        $PgPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 20 | ForEach-Object { [char]$_ })
+        $yaml = $yaml -replace '\{\{PG_PASSWORD\}\}', $PgPassword
+    }
     
     $base64Yaml = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($yaml))
     
@@ -163,15 +181,25 @@ function New-CoolifyWordPressStack {
     $result = Invoke-CoolifyApi -Endpoint "/services" -Method POST -Body $body
     
     Write-Host "Stack creado exitosamente!" -ForegroundColor Green
+    Write-Host "Template: $Template" -ForegroundColor Cyan
     Write-Host "UUID: $($result.uuid)" -ForegroundColor Cyan
     Write-Host "DB Password: $DbPassword" -ForegroundColor Yellow
     Write-Host "Root Password: $RootPassword" -ForegroundColor Yellow
+    if ($PgPassword) {
+        Write-Host "PG Password: $PgPassword" -ForegroundColor Yellow
+    }
     
-    return @{
+    $resultObj = @{
         uuid         = $result.uuid
         dbPassword   = $DbPassword
         rootPassword = $RootPassword
     }
+    
+    if ($PgPassword) {
+        $resultObj.pgPassword = $PgPassword
+    }
+    
+    return $resultObj
 }
 
 function Start-CoolifyService {

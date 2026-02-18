@@ -133,6 +133,31 @@ function Get-MariaDbContainerId {
     return $containerId.Trim()
 }
 
+function Get-PostgresContainerId {
+    <#
+    .SYNOPSIS
+        Obtiene el ID del contenedor PostgreSQL de un stack especifico
+    .PARAMETER Uuid
+        UUID del stack en Coolify
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [string]$Uuid
+    )
+    
+    # Patron Coolify v4: postgres-UUID
+    $cmd = "docker ps -q -f name=postgres-$Uuid | head -n 1"
+    $containerId = (Invoke-SshCommand -Command $cmd -Silent).Trim()
+    
+    if (-not $containerId) {
+        # Fallback: buscar por imagen pgvector
+        $cmd = "docker ps -q -f ancestor=pgvector/pgvector:pg18 | head -n 1"
+        $containerId = (Invoke-SshCommand -Command $cmd -Silent).Trim()
+    }
+    
+    return $containerId
+}
+
 function Invoke-DockerExec {
     <#
     .SYNOPSIS
@@ -341,6 +366,7 @@ Export-ModuleMember -Function @(
     'Get-DockerContainers',
     'Get-WordPressContainerId',
     'Get-MariaDbContainerId',
+    'Get-PostgresContainerId',
     'Invoke-DockerExec',
     'Copy-FileToContainer',
     'Restart-DockerContainer',

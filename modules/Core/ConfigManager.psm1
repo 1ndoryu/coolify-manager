@@ -198,6 +198,45 @@ function Get-AllSites {
     return $config.sitios
 }
 
+function Get-SiteEnvVars {
+    <#
+    .SYNOPSIS
+        Obtiene las variables de entorno de un sitio, expandiendo ${VAR} desde el entorno local
+    .PARAMETER SiteName
+        Nombre del sitio
+    .OUTPUTS
+        Hashtable con las variables expandidas
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [string]$SiteName
+    )
+    
+    $site = Get-SiteConfig -SiteName $SiteName
+    $envVars = @{}
+    
+    if (-not $site.PSObject.Properties['env']) {
+        return $envVars
+    }
+    
+    foreach ($prop in $site.env.PSObject.Properties) {
+        $value = $prop.Value
+        
+        # Expandir ${VAR_NAME} desde variables de entorno del host
+        if ($value -match '\$\{([^}]+)\}') {
+            $varName = $Matches[1]
+            $envValue = [System.Environment]::GetEnvironmentVariable($varName)
+            if ($envValue) {
+                $value = $value -replace [regex]::Escape($Matches[0]), $envValue
+            }
+        }
+        
+        $envVars[$prop.Name] = $value
+    }
+    
+    return $envVars
+}
+
 function Add-Site {
     <#
     .SYNOPSIS
@@ -300,6 +339,7 @@ Export-ModuleMember -Function @(
     'Get-Credential',
     'Get-DbPassword',
     'Get-AllSites',
+    'Get-SiteEnvVars',
     'Add-Site',
     'Remove-Site',
     'Set-SiteConfig',

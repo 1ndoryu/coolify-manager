@@ -1,0 +1,65 @@
+services:
+    wordpress:
+        build:
+            context: .
+            dockerfile: Dockerfile.kamples
+        volumes:
+            - wordpress_data:/var/www/html
+            - uploads_data:/var/www/html/wp-content/uploads
+        environment:
+            WORDPRESS_DB_HOST: mariadb
+            WORDPRESS_DB_USER: manager
+            WORDPRESS_DB_PASSWORD: {{DB_PASSWORD}}
+            WORDPRESS_DB_NAME: wordpress
+            KAMPLES_PG_HOST: postgres
+            KAMPLES_PG_PORT: 5432
+            KAMPLES_PG_DBNAME: kamples
+            KAMPLES_PG_USER: kamples_app
+            KAMPLES_PG_PASSWORD: {{PG_PASSWORD}}
+            FFMPEG_PATH: /usr/bin/ffmpeg
+            FFPROBE_PATH: /usr/bin/ffprobe
+            DEV: "FALSE"
+            LOCAL: "FALSE"
+            WP_DEBUG: "FALSE"
+            SERVICE_FQDN_WORDPRESS: {{DOMAIN}}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            mariadb:
+                condition: service_healthy
+
+    mariadb:
+        image: mariadb:10.11
+        volumes:
+            - db_data:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: {{ROOT_PASSWORD}}
+            MYSQL_DATABASE: wordpress
+            MYSQL_USER: manager
+            MYSQL_PASSWORD: {{DB_PASSWORD}}
+        healthcheck:
+            test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    postgres:
+        image: pgvector/pgvector:pg18
+        volumes:
+            - pg_data:/var/lib/postgresql/data
+            - ./init-postgres.sh:/docker-entrypoint-initdb.d/init.sh
+        environment:
+            POSTGRES_DB: kamples
+            POSTGRES_USER: kamples_app
+            POSTGRES_PASSWORD: {{PG_PASSWORD}}
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U kamples_app -d kamples"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    wordpress_data:
+    uploads_data:
+    db_data:
+    pg_data:

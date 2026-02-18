@@ -66,6 +66,7 @@ function Get-CommandAlias {
         "exec-command"    = "exec"
         "view-logs"       = "logs"
         "debug-site"      = "debug"
+        "setup-kamples"   = "setup-kamples"
     }
     
     if ($aliasMap.ContainsKey($CommandName)) {
