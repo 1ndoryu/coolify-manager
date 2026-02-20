@@ -105,6 +105,7 @@ Edita `config/settings.json` con tus datos:
 ```
 
 **Campos importantes de sitios:**
+
 - `stackUuid`: UUID del stack en Coolify (visible en la URL del stack)
 - `themeName`: Nombre exacto de la carpeta del tema en `/wp-content/themes/` (sensible a mayúsculas)
 
@@ -167,6 +168,7 @@ Crea un stack WordPress completo con instalación y activación automática del 
 ```
 
 **Pasos automáticos:**
+
 1. Crear stack en Coolify (WordPress + MariaDB)
 2. Esperar a que los contenedores inicien
 3. Instalar tema Glory (clonar, composer, npm, build)
@@ -218,6 +220,7 @@ Ejecuta comandos bash o código PHP en contenedores. Soporta argumentos complejo
 ```
 
 **Mejoras recientes:**
+
 - ✅ Soporta argumentos con guiones (ej: `ls -la`)
 - ✅ Código PHP usa archivos temporales (evita problemas de escape)
 - ✅ Captura correcta de output y errores
@@ -259,7 +262,7 @@ Mejora el rendimiento configurando headers de caché para archivos estáticos (C
 # Habilitar cache headers
 .\\manager.ps1 cache -SiteName "blog" -Enable
 
-# Deshabilitar cache headers  
+# Deshabilitar cache headers
 .\\manager.ps1 cache -SiteName "blog" -Disable
 
 # Aplicar a todos los sitios
@@ -268,6 +271,7 @@ Mejora el rendimiento configurando headers de caché para archivos estáticos (C
 ```
 
 **Qué hace:**
+
 - Agrega reglas al `.htaccess` para cachear archivos estáticos
 - Imágenes y fuentes: 1 año (inmutables)
 - CSS y JS: 1 mes (WordPress usa `?ver=` para cache busting)
@@ -279,6 +283,51 @@ Mejora el rendimiento configurando headers de caché para archivos estáticos (C
 ```powershell
 .\\manager.ps1 status
 ```
+
+### `minecraft` - Gestionar servidor Minecraft Java
+
+Crea, administra y monitorea servidores Minecraft Java Edition usando la imagen `itzg/minecraft-server`.
+
+```powershell
+# Crear un servidor nuevo (ultima version, vanilla)
+.\manager.ps1 minecraft -Action new -ServerName "survival"
+
+# Crear con configuracion personalizada
+.\manager.ps1 minecraft -Action new -ServerName "creative" -Memory 4G -MaxPlayers 50 -Difficulty peaceful
+
+# Ver logs del servidor
+.\manager.ps1 minecraft -Action logs -ServerName "survival"
+
+# Ejecutar comando en la consola de Minecraft (via rcon-cli)
+.\manager.ps1 minecraft -Action console -ServerName "survival" -ConsoleCommand "op MiJugador"
+.\manager.ps1 minecraft -Action console -ServerName "survival" -ConsoleCommand "gamemode creative MiJugador"
+.\manager.ps1 minecraft -Action console -ServerName "survival" -ConsoleCommand "list"
+
+# Consultar estado del servidor
+.\manager.ps1 minecraft -Action status -ServerName "survival"
+
+# Reiniciar el servidor
+.\manager.ps1 minecraft -Action restart -ServerName "survival"
+
+# Eliminar servidor (datos del mundo se mantienen en Docker volume)
+.\manager.ps1 minecraft -Action remove -ServerName "survival"
+```
+
+**Parametros de creacion:**
+
+- `Memory` - RAM asignada (default: 2G). Ej: 1G, 2G, 4G
+- `MaxPlayers` - Jugadores maximos (default: 20)
+- `Motd` - Mensaje del dia
+- `Difficulty` - peaceful, easy, normal, hard (default: normal)
+- `Version` - Version de Minecraft (default: LATEST)
+- `Port` - Puerto externo (default: 25565)
+
+**Notas:**
+
+- Los servidores Minecraft se gestionan separadamente de los sitios WordPress
+- Cada servidor crea su propio stack Docker en Coolify
+- Los datos del mundo persisten en un volume Docker (`minecraft_data`)
+- El puerto 25565 TCP se expone directamente (no pasa por proxy HTTP)
 
 ---
 
@@ -371,17 +420,17 @@ Restart-CoolifyService -Uuid "abc123..."
 
 ### Funciones Disponibles
 
-| Módulo                         | Funciones                                                  |
-| ------------------------------ | ---------------------------------------------------------- |
-| CoolifyApi.psm1                | Get-CoolifyServices, New-CoolifyWordPressStack, etc.       |
-| SshOperations.psm1             | Invoke-SshCommand, Get-DockerContainers, etc.              |
-| WordPress/ThemeManager.psm1    | Install-GloryTheme, Update-GloryTheme                      |
-| WordPress/DatabaseManager.psm1 | Import-WordPressDatabase, Export-WordPressDatabase         |
+| Módulo                         | Funciones                                                                |
+| ------------------------------ | ------------------------------------------------------------------------ |
+| CoolifyApi.psm1                | Get-CoolifyServices, New-CoolifyWordPressStack, etc.                     |
+| SshOperations.psm1             | Invoke-SshCommand, Get-DockerContainers, etc.                            |
+| WordPress/ThemeManager.psm1    | Install-GloryTheme, Update-GloryTheme                                    |
+| WordPress/DatabaseManager.psm1 | Import-WordPressDatabase, Export-WordPressDatabase                       |
 | WordPress/SiteManager.psm1     | Get-SiteConfig, Set-WordPressUrls, Enable-GloryTheme, New-WordPressAdmin |
-| WordPress/CacheManager.psm1    | Get-CacheStatus, Enable-CacheHeaders, Disable-CacheHeaders |
-| Core/Validators.psm1           | Test-SiteExists, Test-DomainFormat, Assert-SiteReady       |
-| Core/Logger.psm1               | Write-Log, Get-LogEntries, Clear-OldLogs                   |
-| Core/ConfigManager.psm1        | Get-Config, Get-DbPassword, Get-AllSites                   |
+| WordPress/CacheManager.psm1    | Get-CacheStatus, Enable-CacheHeaders, Disable-CacheHeaders               |
+| Core/Validators.psm1           | Test-SiteExists, Test-DomainFormat, Assert-SiteReady                     |
+| Core/Logger.psm1               | Write-Log, Get-LogEntries, Clear-OldLogs                                 |
+| Core/ConfigManager.psm1        | Get-Config, Get-DbPassword, Get-AllSites                                 |
 
 ---
 

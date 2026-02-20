@@ -8,143 +8,167 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 
 ## [Unreleased] - En desarrollo
 
+### Agregado (2026-02-20) - Servidor Minecraft Java
+
+- **Comando `minecraft`** para crear y gestionar servidores Minecraft Java Edition
+    - `minecraft -Action new` - Crea un servidor Minecraft vanilla (ultima version) como stack en Coolify
+    - `minecraft -Action logs` - Muestra logs del servidor con coloreado por severidad
+    - `minecraft -Action console` - Envia comandos a la consola de Minecraft via rcon-cli
+    - `minecraft -Action status` - Muestra estado del servidor, salud del contenedor y jugadores conectados
+    - `minecraft -Action restart` - Reinicia el servidor via Coolify API
+    - `minecraft -Action remove` - Detiene y elimina el servidor de la configuracion
+
+- **Template `minecraft-stack.yaml`** - Docker Compose para itzg/minecraft-server
+    - Imagen itzg/minecraft-server:latest con descarga automatica de la ultima version
+    - Variables configurables: RAM (MEMORY), jugadores max, dificultad, version, MOTD
+    - Volumen persistente para datos del mundo (`minecraft_data`)
+    - Healthcheck nativo via `mc-health`
+    - Puerto 25565 TCP expuesto directamente (no HTTP/proxy)
+
+- **Separacion de configuracion**: Los servidores Minecraft se almacenan en `settings.json > minecraft[]`, completamente aislados del array `sitios[]` de WordPress
+
 ### Corregido (2026-01-24) - Actualizador de Temas
 
 - **BUG-04**: La rama de la librería (`LibraryBranch`) no se aplicaba correctamente
-  - Problema: Las variables de Bash no se interpolaban bien desde PowerShell, causando que el `git checkout` fallara silenciosamente o no se ejecutara.
-  - Solución: Corregida la interpolación de variables (`$Var` -> `$Var`) en el script embebido.
+    - Problema: Las variables de Bash no se interpolaban bien desde PowerShell, causando que el `git checkout` fallara silenciosamente o no se ejecutara.
+    - Solución: Corregida la interpolación de variables (`$Var` -> `$Var`) en el script embebido.
 
 - **Self-Healing Git**:
-  - Problema: Si la carpeta de la librería no era un repo git válido (ej: copiado por FTP), el `git pull` fallaba.
-  - Solución: Agregada lógica automática para detectar repos rotos, borrarlos y re-clonarlos desde cero sin intervención del usuario.
+    - Problema: Si la carpeta de la librería no era un repo git válido (ej: copiado por FTP), el `git pull` fallaba.
+    - Solución: Agregada lógica automática para detectar repos rotos, borrarlos y re-clonarlos desde cero sin intervención del usuario.
 
 ### Agregado (2026-01-16) - Sistema de Cache Headers
 
 - **Comando `cache`** para gestionar cache headers HTTP en sitios WordPress
-  - `cache -Status` - Verifica estado de cache headers
-  - `cache -Enable` - Habilita cache headers en `.htaccess`
-  - `cache -Disable` - Deshabilita cache headers
-  - `cache -All` - Aplica operación a todos los sitios
+    - `cache -Status` - Verifica estado de cache headers
+    - `cache -Enable` - Habilita cache headers en `.htaccess`
+    - `cache -Disable` - Deshabilita cache headers
+    - `cache -All` - Aplica operación a todos los sitios
 
 - **Módulo `WordPress/CacheManager.psm1`**
-  - `Get-CacheStatus` - Obtiene estado actual de cache
-  - `Enable-CacheHeaders` - Inyecta reglas de cache via PHP
-  - `Disable-CacheHeaders` - Remueve reglas de cache
-  - `Test-ApacheModules` - Verifica/habilita mod_expires y mod_headers
+    - `Get-CacheStatus` - Obtiene estado actual de cache
+    - `Enable-CacheHeaders` - Inyecta reglas de cache via PHP
+    - `Disable-CacheHeaders` - Remueve reglas de cache
+    - `Test-ApacheModules` - Verifica/habilita mod_expires y mod_headers
 
 - **Integración con `new-site.ps1`**
-  - Cache headers se habilitan automáticamente al crear nuevos sitios
-  - Nuevo parámetro `-SkipCache` para omitir la configuración de cache
-  - El proceso de creación ahora tiene 5 pasos en lugar de 4
-
+    - Cache headers se habilitan automáticamente al crear nuevos sitios
+    - Nuevo parámetro `-SkipCache` para omitir la configuración de cache
+    - El proceso de creación ahora tiene 5 pasos en lugar de 4
 
 ### Corregido (2026-01-11) - Compatibilidad Windows → Linux
 
 - **BUG-01**: Splatting de argumentos en `manager.ps1`
-  - Problema: `@RemainingArgs` no funcionaba correctamente con arrays
-  - Solución: Creada función `Invoke-CommandScript` con `Invoke-Expression`
+    - Problema: `@RemainingArgs` no funcionaba correctamente con arrays
+    - Solución: Creada función `Invoke-CommandScript` con `Invoke-Expression`
 
 - **BUG-02**: Caracteres `\r` de Windows corrompen comandos en Linux
-  - Problema: Here-strings de PowerShell preservan `\r\n`, causando errores como `cd: $'/path\r': No such file or directory`
-  - Solución: Agregada limpieza `$cleanCommand = $Command -replace "\`r", ""` en `Invoke-DockerExec`
+    - Problema: Here-strings de PowerShell preservan `\r\n`, causando errores como `cd: $'/path\r': No such file or directory`
+    - Solución: Agregada limpieza `$cleanCommand = $Command -replace "\`r", ""`en`Invoke-DockerExec`
 
 - **BUG-03**: Parámetro incorrecto en `ThemeManager.psm1`
-  - Problema: Se usaba `-Source` en llamadas a `Invoke-DockerExec` (debía ser `-Command`)
-  - Solución: Corregidas las 3 llamadas a `Invoke-DockerExec`
+    - Problema: Se usaba `-Source` en llamadas a `Invoke-DockerExec` (debía ser `-Command`)
+    - Solución: Corregidas las 3 llamadas a `Invoke-DockerExec`
 
 - **Mejoras en scripts de deploy**:
-  - Scripts ahora usan rutas absolutas para evitar errores de navegación
-  - Configuración automática de `git safe.directory` para evitar "dubious ownership"
-  - Composer se ejecuta desde el directorio correcto del tema
+    - Scripts ahora usan rutas absolutas para evitar errores de navegación
+    - Configuración automática de `git safe.directory` para evitar "dubious ownership"
+    - Composer se ejecuta desde el directorio correcto del tema
 
 ### Agregado (Fase 3 - Refactorización SOLID)
+
 - **Módulo `WordPress/ThemeManager.psm1`** - Gestión del tema Glory
-  - `Get-GloryConfig` - Obtiene configuración de repositorios Glory
-  - `Install-GloryTheme` - Instalación completa del tema con dependencias
-  - `Update-GloryTheme` - Actualización via git pull + rebuild
+    - `Get-GloryConfig` - Obtiene configuración de repositorios Glory
+    - `Install-GloryTheme` - Instalación completa del tema con dependencias
+    - `Update-GloryTheme` - Actualización via git pull + rebuild
 
 - **Módulo `WordPress/DatabaseManager.psm1`** - Operaciones de base de datos
-  - `Import-WordPressDatabase` - Importa archivos SQL a MariaDB
-  - `Export-WordPressDatabase` - Exporta BD a archivo local (NUEVO)
+    - `Import-WordPressDatabase` - Importa archivos SQL a MariaDB
+    - `Export-WordPressDatabase` - Exporta BD a archivo local (NUEVO)
 
 - **Módulo `WordPress/SiteManager.psm1`** - Configuración de sitios WP
-  - `Get-SiteConfig` - Obtiene config de sitio con mensaje de error mejorado
-  - `Set-WordPressUrls` - Actualiza opciones home y siteurl
-  - `New-WordPressAdmin` - Crea usuarios administradores
-  - `Get-WordPressOption` - Obtiene cualquier opción de WP (NUEVO)
+    - `Get-SiteConfig` - Obtiene config de sitio con mensaje de error mejorado
+    - `Set-WordPressUrls` - Actualiza opciones home y siteurl
+    - `New-WordPressAdmin` - Crea usuarios administradores
+    - `Get-WordPressOption` - Obtiene cualquier opción de WP (NUEVO)
 
 - **Tests de integración**
-  - `tests/Integration/ThemeManager.Tests.ps1`
-  - `tests/Integration/DatabaseManager.Tests.ps1`
-  - `tests/Integration/SiteManager.Tests.ps1`
+    - `tests/Integration/ThemeManager.Tests.ps1`
+    - `tests/Integration/DatabaseManager.Tests.ps1`
+    - `tests/Integration/SiteManager.Tests.ps1`
 
 ### Modificado
+
 - **`WordPressManager.psm1`** refactorizado como módulo facade
-  - Ahora re-exporta funciones de los módulos especializados
-  - Mantiene compatibilidad hacia atrás con código existente
-  - Reducido de 331 líneas a ~45 líneas
+    - Ahora re-exporta funciones de los módulos especializados
+    - Mantiene compatibilidad hacia atrás con código existente
+    - Reducido de 331 líneas a ~45 líneas
 
 ### Agregado (Fase 4 - Extensibilidad)
+
 - **Módulo `commands/registry.psm1`** - Registro dinámico de comandos
-  - `Get-AvailableCommands` - Lista comandos disponibles
-  - `Get-CommandAlias` - Obtiene alias de comando
-  - `Invoke-Command` - Ejecuta comando por alias
-  - `Show-CommandsTable` - Muestra tabla de comandos
+    - `Get-AvailableCommands` - Lista comandos disponibles
+    - `Get-CommandAlias` - Obtiene alias de comando
+    - `Invoke-Command` - Ejecuta comando por alias
+    - `Show-CommandsTable` - Muestra tabla de comandos
 
 - **Documentación `docs/ARQUITECTURA.md`** - Guía técnica completa
-  - Estructura de carpetas
-  - Descripción de módulos
-  - Flujo de datos
-  - Principios SOLID aplicados
-  - Guía de extensión
+    - Estructura de carpetas
+    - Descripción de módulos
+    - Flujo de datos
+    - Principios SOLID aplicados
+    - Guía de extensión
 
 ### Agregado (Fases 1-2)
+
 - **Módulo `Validators.psm1`** - Sistema de validación centralizado
-  - `Test-SiteExists` - Verifica si un sitio existe en la configuración
-  - `Test-DomainFormat` - Valida formato de dominios (requiere protocolo)
-  - `Test-StackUuidExists` - Verifica si un sitio tiene UUID configurado
-  - `Test-SshConnection` - Prueba conectividad SSH al VPS
-  - `Test-CoolifyApiConnection` - Prueba conectividad a la API de Coolify
-  - `Test-SqlFileExists` - Valida existencia de archivos SQL
-  - `Assert-SiteReady` - Validación compuesta para operaciones
+    - `Test-SiteExists` - Verifica si un sitio existe en la configuración
+    - `Test-DomainFormat` - Valida formato de dominios (requiere protocolo)
+    - `Test-StackUuidExists` - Verifica si un sitio tiene UUID configurado
+    - `Test-SshConnection` - Prueba conectividad SSH al VPS
+    - `Test-CoolifyApiConnection` - Prueba conectividad a la API de Coolify
+    - `Test-SqlFileExists` - Valida existencia de archivos SQL
+    - `Assert-SiteReady` - Validación compuesta para operaciones
 
 - **Módulo `Logger.psm1`** - Sistema de logging estructurado
-  - Niveles: DEBUG, INFO, WARN, ERROR
-  - Rotación automática por fecha
-  - Función `Write-Log` para registrar eventos
-  - Función `Get-LogEntries` para consultar logs
-  - Función `Clear-OldLogs` para limpieza automática
+    - Niveles: DEBUG, INFO, WARN, ERROR
+    - Rotación automática por fecha
+    - Función `Write-Log` para registrar eventos
+    - Función `Get-LogEntries` para consultar logs
+    - Función `Clear-OldLogs` para limpieza automática
 
 - **Módulo `ConfigManager.psm1`** - Gestión centralizada de configuración
-  - Soporte para variables de entorno `${VAR_NAME}`
-  - Cache de configuración para rendimiento
-  - `Get-DbPassword` - Obtención segura de passwords
-  - Operaciones CRUD para sitios
+    - Soporte para variables de entorno `${VAR_NAME}`
+    - Cache de configuración para rendimiento
+    - `Get-DbPassword` - Obtención segura de passwords
+    - Operaciones CRUD para sitios
 
 - **Estructura de carpetas mejorada**
-  - `modules/Core/` - Módulos fundamentales
-  - `modules/Coolify/` - (Preparado para refactorización)
-  - `modules/Infrastructure/` - (Preparado para refactorización)
-  - `modules/WordPress/` - (Preparado para refactorización)
-  - `tests/Unit/` - Tests unitarios Pester
-  - `tests/Integration/` - Tests de integración
-  - `tests/Mocks/` - Mocks para testing
-  - `logs/` - Directorio de logs
+    - `modules/Core/` - Módulos fundamentales
+    - `modules/Coolify/` - (Preparado para refactorización)
+    - `modules/Infrastructure/` - (Preparado para refactorización)
+    - `modules/WordPress/` - (Preparado para refactorización)
+    - `tests/Unit/` - Tests unitarios Pester
+    - `tests/Integration/` - Tests de integración
+    - `tests/Mocks/` - Mocks para testing
+    - `logs/` - Directorio de logs
 
 - **Tests unitarios Pester**
-  - `Validators.Tests.ps1` - Tests para validadores
-  - `ConfigManager.Tests.ps1` - Tests para gestión de config
-  - `Logger.Tests.ps1` - Tests para sistema de logs
+    - `Validators.Tests.ps1` - Tests para validadores
+    - `ConfigManager.Tests.ps1` - Tests para gestión de config
+    - `Logger.Tests.ps1` - Tests para sistema de logs
 
 - **Template de configuración seguro**
-  - `config/settings.template.json` - Sin datos sensibles
+    - `config/settings.template.json` - Sin datos sensibles
 
 ### Corregido
+
 - **SEC-02 (CRÍTICO)**: Eliminado password hardcodeado "password" en `WordPressManager.psm1`
-  - Ahora usa `Get-DbPassword` que busca en variables de entorno
-  - Orden de búsqueda: `DB_PASSWORD_SITENAME` → `COOLIFY_DB_PASSWORD` → config file
+    - Ahora usa `Get-DbPassword` que busca en variables de entorno
+    - Orden de búsqueda: `DB_PASSWORD_SITENAME` → `COOLIFY_DB_PASSWORD` → config file
 
 ### Seguridad
+
 - Las credenciales ahora se pueden definir via variables de entorno
 - Template de config sin datos sensibles para control de versiones
 - Validación de inputs antes de operaciones críticas
@@ -154,6 +178,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 ## [1.0.0] - 2026-01-05
 
 ### Estado Inicial
+
 - Punto de entrada `manager.ps1`
 - Módulos: `CoolifyApi.psm1`, `SshOperations.psm1`, `WordPressManager.psm1`
 - Comandos: new-site, list-sites, restart-site, deploy-theme, import-database, exec-command, view-logs
@@ -161,6 +186,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 - Tests manuales: Test-Manual.ps1, Test-Ssh.ps1
 
 ### Problemas Conocidos (En corrección)
+
 - [x] SEC-02: Password hardcodeado (CORREGIDO)
 - [ ] SEC-01: Token API en texto plano (En progreso)
 - [ ] A-03: Sitio "guillermo" sin UUID
@@ -168,4 +194,4 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 
 ---
 
-*Próxima versión planificada: v2.0.0 con arquitectura SOLID completa*
+_Próxima versión planificada: v2.0.0 con arquitectura SOLID completa_

@@ -66,7 +66,8 @@ function Get-CommandAlias {
         "exec-command"    = "exec"
         "view-logs"       = "logs"
         "debug-site"      = "debug"
-        "setup-kamples"   = "setup-kamples"
+        "setup-kamples"    = "setup-kamples"
+        "minecraft-server" = "minecraft"
     }
     
     if ($aliasMap.ContainsKey($CommandName)) {

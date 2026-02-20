@@ -25,7 +25,7 @@
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug", "cache", "git-status", "setup-kamples")]
+    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug", "cache", "git-status", "setup-kamples", "minecraft")]
     [string]$Action = "help",
     
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -101,6 +101,13 @@ function Show-Help {
     Write-Host "Configurar Kamples post-creacion (PG, migraciones, build, env)"
     Write-Host "             Ejemplo: .\manager.ps1 setup-kamples -SiteName kamples"
     Write-Host "             Ejemplo: .\manager.ps1 setup-kamples -SkipBuild -SkipMigrations"
+    Write-Host ""
+    Write-Host "    minecraft" -ForegroundColor Green -NoNewline
+    Write-Host "Gestionar servidor Minecraft Java"
+    Write-Host "             Ejemplo: .\manager.ps1 minecraft -Action new -ServerName survival"
+    Write-Host "             Ejemplo: .\manager.ps1 minecraft -Action logs -ServerName survival"
+    Write-Host "             Ejemplo: .\manager.ps1 minecraft -Action console -ServerName survival -ConsoleCommand 'op Player'"
+    Write-Host "             Ejemplo: .\manager.ps1 minecraft -Action status -ServerName survival"
     Write-Host ""
     Write-Host "    help     " -ForegroundColor Green -NoNewline
     Write-Host "Mostrar esta ayuda"
@@ -247,6 +254,9 @@ switch ($Action) {
     }
     "setup-kamples" {
         Invoke-CommandScript -ScriptPath "$CommandsPath\setup-kamples.ps1" -Arguments $RemainingArgs
+    }
+    "minecraft" {
+        Invoke-CommandScript -ScriptPath "$CommandsPath\minecraft-server.ps1" -Arguments $RemainingArgs
     }
     default {
         Show-Help
