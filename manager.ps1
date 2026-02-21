@@ -25,7 +25,7 @@
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug", "cache", "git-status", "setup-kamples", "minecraft")]
+    [ValidateSet("new", "list", "restart", "deploy", "import", "exec", "logs", "help", "status", "set-domain", "redeploy", "debug", "cache", "git-status", "setup-kamples", "minecraft", "smtp")]
     [string]$Action = "help",
     
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -108,6 +108,13 @@ function Show-Help {
     Write-Host "             Ejemplo: .\manager.ps1 minecraft -McAction logs -ServerName survival"
     Write-Host "             Ejemplo: .\manager.ps1 minecraft -McAction console -ServerName survival -ConsoleCommand 'op Player'"
     Write-Host "             Ejemplo: .\manager.ps1 minecraft -McAction status -ServerName survival"
+    Write-Host ""
+    Write-Host "    smtp     " -ForegroundColor Green -NoNewline
+    Write-Host "Configurar SMTP relay (Brevo) en sitios WordPress"
+    Write-Host "             Ejemplo: .\manager.ps1 smtp -SiteName cap"
+    Write-Host "             Ejemplo: .\manager.ps1 smtp -All"
+    Write-Host "             Ejemplo: .\manager.ps1 smtp -SiteName cap -Test"
+    Write-Host "             Ejemplo: .\manager.ps1 smtp -Status"
     Write-Host ""
     Write-Host "    help     " -ForegroundColor Green -NoNewline
     Write-Host "Mostrar esta ayuda"
@@ -257,6 +264,9 @@ switch ($Action) {
     }
     "minecraft" {
         Invoke-CommandScript -ScriptPath "$CommandsPath\minecraft-server.ps1" -Arguments $RemainingArgs
+    }
+    "smtp" {
+        Invoke-CommandScript -ScriptPath "$CommandsPath\setup-smtp.ps1" -Arguments $RemainingArgs
     }
     default {
         Show-Help

@@ -320,6 +320,12 @@ if [ ! -d "`$LIBRARY_PATH/.git" ]; then
 else
     cd `$LIBRARY_PATH
     git fetch --all
+    if [ "$Force" = "True" ]; then
+        echo "[WARN] Limpiando cambios locales en libreria antes de checkout..."
+        git reset --hard HEAD
+        git clean -fd
+    fi
+
     git checkout `$LIBRARY_BRANCH
     
     if [ "$Force" = "True" ]; then
