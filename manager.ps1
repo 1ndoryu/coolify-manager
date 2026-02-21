@@ -104,10 +104,10 @@ function Show-Help {
     Write-Host ""
     Write-Host "    minecraft" -ForegroundColor Green -NoNewline
     Write-Host "Gestionar servidor Minecraft Java"
-    Write-Host "             Ejemplo: .\manager.ps1 minecraft -Action new -ServerName survival"
-    Write-Host "             Ejemplo: .\manager.ps1 minecraft -Action logs -ServerName survival"
-    Write-Host "             Ejemplo: .\manager.ps1 minecraft -Action console -ServerName survival -ConsoleCommand 'op Player'"
-    Write-Host "             Ejemplo: .\manager.ps1 minecraft -Action status -ServerName survival"
+    Write-Host "             Ejemplo: .\manager.ps1 minecraft -McAction new -ServerName survival"
+    Write-Host "             Ejemplo: .\manager.ps1 minecraft -McAction logs -ServerName survival"
+    Write-Host "             Ejemplo: .\manager.ps1 minecraft -McAction console -ServerName survival -ConsoleCommand 'op Player'"
+    Write-Host "             Ejemplo: .\manager.ps1 minecraft -McAction status -ServerName survival"
     Write-Host ""
     Write-Host "    help     " -ForegroundColor Green -NoNewline
     Write-Host "Mostrar esta ayuda"

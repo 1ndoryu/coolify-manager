@@ -290,27 +290,27 @@ Crea, administra y monitorea servidores Minecraft Java Edition usando la imagen 
 
 ```powershell
 # Crear un servidor nuevo (ultima version, vanilla)
-.\manager.ps1 minecraft -Action new -ServerName "survival"
+.\manager.ps1 minecraft -McAction new -ServerName "survival"
 
 # Crear con configuracion personalizada
-.\manager.ps1 minecraft -Action new -ServerName "creative" -Memory 4G -MaxPlayers 50 -Difficulty peaceful
+.\manager.ps1 minecraft -McAction new -ServerName "creative" -Memory 4G -MaxPlayers 50 -Difficulty peaceful
 
 # Ver logs del servidor
-.\manager.ps1 minecraft -Action logs -ServerName "survival"
+.\manager.ps1 minecraft -McAction logs -ServerName "survival"
 
 # Ejecutar comando en la consola de Minecraft (via rcon-cli)
-.\manager.ps1 minecraft -Action console -ServerName "survival" -ConsoleCommand "op MiJugador"
-.\manager.ps1 minecraft -Action console -ServerName "survival" -ConsoleCommand "gamemode creative MiJugador"
-.\manager.ps1 minecraft -Action console -ServerName "survival" -ConsoleCommand "list"
+.\manager.ps1 minecraft -McAction console -ServerName "survival" -ConsoleCommand "op MiJugador"
+.\manager.ps1 minecraft -McAction console -ServerName "survival" -ConsoleCommand "gamemode creative MiJugador"
+.\manager.ps1 minecraft -McAction console -ServerName "survival" -ConsoleCommand "list"
 
 # Consultar estado del servidor
-.\manager.ps1 minecraft -Action status -ServerName "survival"
+.\manager.ps1 minecraft -McAction status -ServerName "survival"
 
 # Reiniciar el servidor
-.\manager.ps1 minecraft -Action restart -ServerName "survival"
+.\manager.ps1 minecraft -McAction restart -ServerName "survival"
 
 # Eliminar servidor (datos del mundo se mantienen en Docker volume)
-.\manager.ps1 minecraft -Action remove -ServerName "survival"
+.\manager.ps1 minecraft -McAction remove -ServerName "survival"
 ```
 
 **Parametros de creacion:**

@@ -8,7 +8,7 @@
 
     IMPORTANTE: Este comando NO afecta los stacks WordPress existentes.
     Minecraft se maneja como un tipo de servicio separado.
-.PARAMETER Action
+.PARAMETER McAction
     Accion a realizar: new, logs, console, restart, status, remove
 .PARAMETER ServerName
     Nombre identificador del servidor Minecraft
@@ -25,21 +25,21 @@
 .PARAMETER Port
     Puerto externo del servidor (default: 25565)
 .EXAMPLE
-    .\minecraft-server.ps1 -Action new -ServerName "survival"
+    .\minecraft-server.ps1 -McAction new -ServerName "survival"
 .EXAMPLE
-    .\minecraft-server.ps1 -Action new -ServerName "creative" -Memory 4G -MaxPlayers 50
+    .\minecraft-server.ps1 -McAction new -ServerName "creative" -Memory 4G -MaxPlayers 50
 .EXAMPLE
-    .\minecraft-server.ps1 -Action logs -ServerName "survival"
+    .\minecraft-server.ps1 -McAction logs -ServerName "survival"
 .EXAMPLE
-    .\minecraft-server.ps1 -Action console -ServerName "survival" -ConsoleCommand "op PlayerName"
+    .\minecraft-server.ps1 -McAction console -ServerName "survival" -ConsoleCommand "op PlayerName"
 .EXAMPLE
-    .\minecraft-server.ps1 -Action status -ServerName "survival"
+    .\minecraft-server.ps1 -McAction status -ServerName "survival"
 #>
 
 param(
     [Parameter(Mandatory)]
     [ValidateSet("new", "logs", "console", "restart", "status", "remove")]
-    [string]$Action,
+    [string]$McAction,
 
     [Parameter(Mandatory)]
     [string]$ServerName,
@@ -111,7 +111,7 @@ function Get-MinecraftServer {
     return $server
 }
 
-switch ($Action) {
+switch ($McAction) {
     "new" {
         Write-Host ""
         Write-Host "========================================" -ForegroundColor Cyan
@@ -150,16 +150,16 @@ switch ($Action) {
         $yaml = $yaml -replace '\{\{SERVER_NAME\}\}', $ServerName
 
         # Ajustar variables de entorno segun parametros del usuario
-        # Las regex usan ['\"] para ser resilientes a ambos formatos de comillas
-        $yaml = $yaml -replace "MEMORY: ['\`""]2G['\`""]", "MEMORY: '$Memory'"
-        $yaml = $yaml -replace "MAX_PLAYERS: ['\`""]20['\`""]", "MAX_PLAYERS: '$MaxPlayers'"
-        $yaml = $yaml -replace "MOTD: ['\`""]Servidor Minecraft - Coolify Managed['\`""]", "MOTD: '$Motd'"
-        $yaml = $yaml -replace "DIFFICULTY: ['\`""]normal['\`""]", "DIFFICULTY: '$Difficulty'"
-        $yaml = $yaml -replace "VERSION: ['\`""]LATEST['\`""]", "VERSION: '$Version'"
+        # Usar patrones sin comillas conflictivas para evitar errores de parsing
+        $yaml = $yaml -replace "MEMORY: '2G'", "MEMORY: '$Memory'"
+        $yaml = $yaml -replace "MAX_PLAYERS: '20'", "MAX_PLAYERS: '$MaxPlayers'"
+        $yaml = $yaml -replace "MOTD: 'Servidor Minecraft - Coolify Managed'", "MOTD: '$Motd'"
+        $yaml = $yaml -replace "DIFFICULTY: 'normal'", "DIFFICULTY: '$Difficulty'"
+        $yaml = $yaml -replace "VERSION: 'LATEST'", "VERSION: '$Version'"
 
         # Ajustar puerto si es diferente al default
         if ($Port -ne 25565) {
-            $yaml = $yaml -replace "['\`""]25565:25565['\`""]", "'${Port}:25565'"
+            $yaml = $yaml -replace "'25565:25565'", "'${Port}:25565'"
         }
 
         $base64Yaml = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($yaml))
