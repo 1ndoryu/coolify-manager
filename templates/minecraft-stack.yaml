@@ -16,6 +16,7 @@ services:
             ENABLE_COMMAND_BLOCK: 'true'
             VIEW_DISTANCE: '10'
             SPAWN_PROTECTION: '0'
+            ONLINE_MODE: 'FALSE'
             SERVER_NAME: '{{SERVER_NAME}}'
             TZ: 'America/Santo_Domingo'
         volumes:
